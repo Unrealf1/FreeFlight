@@ -21,10 +21,19 @@ enable_sanitizers(project_options)
 
 include(cmake/Doxygen.cmake)
 
+# later can add assimp/5.0.1 for model import
+set(CONAN_BASE_DEPENDENCIES "spdlog/1.8.5"
+    "glm/0.9.9.8"
+    "glew/2.2.0" 
+    "glfw/3.3.4" 
+    "imgui/1.82" 
+    "jsoncpp/1.9.4" )
+set(CONAN_TEST_DEPENDENCIES "gtest/1.10.0")
+
 if (TESTS)
-    set(CONAN_EXTRA_REQUIRES "gtest/1.10.0" "spdlog/1.8.5")
+    set(CONAN_EXTRA_REQUIRES ${CONAN_BASE_DEPENDENCIES} ${CONAN_TEST_DEPENDENCIES})
 else()
-    set(CONAN_EXTRA_REQUIRES "spdlog/1.8.5")
+    set(CONAN_EXTRA_REQUIRES ${CONAN_BASE_DEPENDENCIES})
 endif()
 
 include(cmake/Conan.cmake)
@@ -33,6 +42,8 @@ run_conan()
 if (NOT APPLE)
     set(CMAKE_INSTALL_RPATH $ORIGIN)
 endif()
+
+add_subdirectory("./External")
 
 add_subdirectory("./General")
 
