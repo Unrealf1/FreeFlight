@@ -8,10 +8,10 @@ struct ApplicationParameters {
 
 class ApplicationParametersReader {
 public:
-    ApplicationParameters read(const std::string& filepath);
+    static ApplicationParameters read(const std::string& filepath);
 };
 
 class ApplicationParametersWriter {
 public:
-    void write(const ApplicationParameters& parameters, const std::string& filepath);
+    static void write(const ApplicationParameters& parameters, const std::string& filepath);
 };
