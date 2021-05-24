@@ -5,3 +5,4 @@ CMakeSettings.json
 .idea/**
 .cmake-build-debug/**
 log/**
+imgui.ini

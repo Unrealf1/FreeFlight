@@ -68,6 +68,7 @@ protected:
 
     virtual void drawGUI() {
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     void run() {

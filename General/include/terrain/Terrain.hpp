@@ -20,6 +20,7 @@ public:
     void playerUpdate(const PlayerInfo&) override;
 
 private:
+    GraphicObject _graphics;
     chunkContainer_t _chunks;
     const std::size_t _chunk_limit = instance_render_limit;
 

@@ -9,7 +9,5 @@ public:
     virtual ~DrawableUnit() = default;
 
     virtual void draw(const RenderInfo&) = 0;
-    virtual void init() = 0;
-protected:
-    GraphicObject _graphics;
+    virtual void init() = 0;    
 };

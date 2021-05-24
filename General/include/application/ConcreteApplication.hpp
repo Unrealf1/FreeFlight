@@ -64,8 +64,6 @@ protected:
             if (ImGui::Button("Button")) {
                 _logger->info("button was pressed");                
             }
-        } else {
-            _logger->error("gui error");
         }
         ImGui::End();
     }
