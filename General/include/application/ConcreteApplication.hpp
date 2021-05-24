@@ -2,6 +2,7 @@
 
 #include "application/Application.hpp"
 #include "render/DrawableUnit.hpp"
+#include "terrain/Terrain.hpp"
 
 class ConcreteApplication: public Application {
 public:
@@ -46,11 +47,13 @@ protected:
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-        RenderInfo info;
+        auto cam_info = _player.cameraMover->cameraInfo();
+        RenderInfo renderInfo;
+        renderInfo.view_mat = cam_info.viewMatrix;
+        renderInfo.proj_mat = cam_info.projMatrix;
         //...
         for (auto& item : _drawable) {
-            item->draw(info);
+            item->draw(renderInfo);
         }
     }
 
@@ -71,12 +74,25 @@ protected:
     virtual void prepareScene() override {
         _player.cameraMover = std::make_unique<FreeCameraMover>(5.0f);
         _player.cameraMover.get()->setNearFarPlanes(_params.near_plane, _params.far_plane);
+
+        _logger->debug("creating terrain...");
+        auto terrain = std::make_shared<Terrain>(10000.0f);
+        terrain->init();
+        _drawable.push_back(terrain);
+        _player_dependable.push_back(terrain);
+        _logger->debug("terrain created!");
     }
 
     virtual void onUpdate(const UpdateInfo& info) override {
         for (auto& item : _updatable) {
             item->update(info);
         }
+
+        for (auto& item : _player_dependable) {
+            item->playerUpdate(_player);
+        }
+
+        _player.cameraMover->update(info.window, info.dt);
     }
 
     virtual void onRun() override {

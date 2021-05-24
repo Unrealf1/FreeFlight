@@ -1,17 +1,18 @@
 #pragma once
 
 #include <vector>
+#include <glm/glm.hpp>
 
 struct ChunkVertex {
     float height;
+    
 };
 
 struct TerrainChunk {
     using vertex_t = ChunkVertex; 
     using vertexMap_t = std::vector<std::vector<vertex_t>>;
 
-public:
+    glm::vec2 _center_location;
     vertexMap_t _vertices;
-
 };
 
