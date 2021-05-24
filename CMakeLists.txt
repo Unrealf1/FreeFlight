@@ -8,7 +8,6 @@ project(FreeFlight)
 
 option(TESTS "Build tests" OFF)
 option(COVERAGE "Build with coverage" OFF)
-option(EXAMPLE "Build example" OFF)
 
 add_library(project_options INTERFACE)
 add_library(project_warnings INTERFACE)
@@ -39,6 +38,7 @@ endif()
 include(cmake/Conan.cmake)
 run_conan()
 
+
 if (NOT APPLE)
     set(CMAKE_INSTALL_RPATH $ORIGIN)
 endif()
@@ -63,6 +63,4 @@ if (TESTS)
     add_subdirectory("./Test")
 endif(TESTS)
 
-if (EXAMPLE)
-    add_subdirectory("./Example")
-endif(EXAMPLE)
+add_subdirectory("./Game")

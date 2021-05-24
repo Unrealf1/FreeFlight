@@ -1,9 +1,16 @@
 #pragma once
 
 #include <string>
+#include <spdlog/spdlog.h>
+
 
 struct ApplicationParameters {
     float view_distance;
+    float near_plane;
+    float far_plane;
+
+    std::string log_location;
+    spdlog::level::level_enum log_level;
 };
 
 class ApplicationParametersReader {
