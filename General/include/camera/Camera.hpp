@@ -62,8 +62,8 @@ public:
 
 	virtual void showOrientationParametersImgui() { }
     virtual glm::vec3 getPos() = 0;
-    virtual void setSpeed(float) = 0;
-    virtual float getSpeed() = 0;
+    // virtual void setSpeed(float) = 0;
+    // virtual float getSpeed() = 0;
 protected:
     CameraInfo _camera;
     float _near = 0.1f;
@@ -114,11 +114,11 @@ public:
     glm::vec3 getPos() override {
         return _pos;
     }
-    void setSpeed(float spd) override {
+    void setSpeed(float spd) {
         speed = spd;
     }
 
-    float getSpeed() override {
+    float getSpeed() {
         return speed;
     }
 protected:

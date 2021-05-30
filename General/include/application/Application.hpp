@@ -147,7 +147,7 @@ protected:
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         //Создаем графический контекст (окно)
-        GLFWwindow* window = glfwCreateWindow(800, 600, "Amazing triangle", nullptr, nullptr);
+        GLFWwindow* window = glfwCreateWindow(800, 600, _params.window_name.c_str(), nullptr, nullptr);
         if (!window) {
             _logger->error("could not open window with GLFW3");
             glfwTerminate();

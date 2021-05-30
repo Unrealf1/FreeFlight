@@ -5,6 +5,13 @@
 #include <glm/glm.hpp>
 #include <GL/glew.h>
 
+/*
+My vector space:
+X to the right
+Y from the screen
+Z up
+*/
+
 constexpr std::size_t instance_render_limit = 100;
 
 template<typename Point = glm::vec3>

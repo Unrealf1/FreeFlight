@@ -133,8 +133,7 @@ void FreeCameraMover::handleScroll(GLFWwindow* window, double xoffset, double yo
 {
 }
 
-void FreeCameraMover::update(GLFWwindow* window, double dt)
-{
+void FreeCameraMover::update(GLFWwindow* window, double dt) {
     float actual_speed = speed;
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
         actual_speed *= 2;

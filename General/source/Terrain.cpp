@@ -12,6 +12,7 @@
 #include <spdlog/spdlog.h>
 
 
+
 static const char* const terrain_program_name = "terrain_program";
 
 void Terrain::draw(const RenderInfo& info) {

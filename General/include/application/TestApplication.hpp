@@ -2,12 +2,13 @@
 
 #include "application/Application.hpp"
 #include "render/DrawableUnit.hpp"
-#include "terrain/Terrain.hpp"
-#include "player/Player.hpp"
+#include "camera/Camera.hpp"
+#include "primitives/Square.hpp"
 
-class ConcreteApplication: public Application {
+
+class TestApplication: public Application {
 public:
-    ConcreteApplication(const ApplicationParameters& params): Application(params) { }
+    TestApplication(const ApplicationParameters& params): Application(params) { }
 
     virtual void handleKey(int key, int scancode, int action, int mods) override {
         if (action == GLFW_PRESS)
@@ -18,7 +19,7 @@ public:
             }
         }
 
-        _player.getInfo().cameraMover->handleKey(_window, key, scancode, action, mods);
+        _cameraMover->handleKey(_window, key, scancode, action, mods);
     }
 
     virtual void handleMouseMove(double xpos, double ypos) override {
@@ -27,17 +28,16 @@ public:
             return;
         }
 
-        _player.getInfo().cameraMover->handleMouseMove(_window, xpos, ypos);
+        _cameraMover->handleMouseMove(_window, xpos, ypos);
     }
 
     virtual void handleScroll(double xoffset, double yoffset) override {
-        _player.getInfo().cameraMover->handleScroll(_window, xoffset, yoffset);
+        _cameraMover->handleScroll(_window, xoffset, yoffset);
     }
 protected:
-    Player _player;
+    std::shared_ptr<CameraMover> _cameraMover;
 
     std::vector<std::shared_ptr<DrawableUnit>> _drawable;
-    std::vector<std::shared_ptr<PlayerDependable>> _player_dependable;
     std::vector<std::shared_ptr<Updatable>> _updatable;
 
     virtual void draw() override {
@@ -48,7 +48,7 @@ protected:
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        auto cam_info = _player.cameraMover->cameraInfo();
+        auto cam_info = _cameraMover->cameraInfo();
         RenderInfo renderInfo;
         renderInfo.view_mat = cam_info.viewMatrix;
         renderInfo.proj_mat = cam_info.projMatrix;
@@ -73,36 +73,32 @@ protected:
     }
 
     virtual void prepareScene() override {
-        _player.getInfo().cameraMover = std::make_unique<FreeCameraMover>(5.0f);
-        _player.getInfo().cameraMover.get()->setNearFarPlanes(_params.near_plane, _params.far_plane);
+        _cameraMover = std::make_unique<OrbitCameraMover>();
+        //_cameraMover = std::make_unique<FreeCameraMover>(5.0f);
+        _cameraMover.get()->setNearFarPlanes(_params.near_plane, _params.far_plane);
+        _cameraMover.get()->setNearFarPlanes(0.1f, 2000.0f);
 
-        _logger->debug("creating terrain...");
-        auto terrain = std::make_shared<Terrain>(10000.0f);
-        terrain->init();
-        _drawable.push_back(terrain);
-        _player_dependable.push_back(terrain);
-        _logger->debug("terrain created!");
+        _drawable.push_back(std::make_shared<Square>(10));
+
+        for (auto& item : _drawable) {
+            item->init();
+        }
     }
 
     virtual void onUpdate(const UpdateInfo& info) override {
-        _player.update(info.window, info.dt);
+        _cameraMover->update(info.window, info.dt);
 
         for (auto& item : _updatable) {
             item->update(info);
         }
-
-        auto& playerInfo = _player.getInfo();
-        for (auto& item : _player_dependable) {
-            item->playerUpdate(playerInfo);
-        }
     }
 
     virtual void onRun() override {
-        _logger->debug("onRun");
+        _logger->debug("Test application is running");
     }
 
     virtual void onStop() override {
-        _logger->debug("onStop");
+        _logger->debug("Test application is stopping");
     }
 
 

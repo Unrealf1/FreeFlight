@@ -11,6 +11,8 @@ struct ApplicationParameters {
 
     std::string log_location;
     spdlog::level::level_enum log_level;
+
+    std::string window_name;
 };
 
 class ApplicationParametersReader {
