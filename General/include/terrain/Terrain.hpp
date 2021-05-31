@@ -38,7 +38,7 @@ private:
     chunkContainer_t _active_chunks;
     static constexpr std::size_t _active_chunk_limit = instance_render_limit;
     const std::size_t _archived_chunks_limit = 1000;
-    static constexpr std::size_t chunk_size_limit = 1000;
+    static constexpr std::size_t chunk_size_limit = 2000;
     static constexpr std::size_t max_points_in_chunk = chunk_size_limit * chunk_size_limit;
     static constexpr std::size_t heights_buffer_size = max_points_in_chunk * _active_chunk_limit;
 

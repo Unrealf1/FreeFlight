@@ -37,7 +37,7 @@ public:
         _cameraMover->handleScroll(_window, xoffset, yoffset);
     }
 protected:
-    std::shared_ptr<CameraMover> _cameraMover;
+    std::shared_ptr<FreeCameraMover> _cameraMover;
 
     std::vector<std::shared_ptr<DrawableUnit>> _drawable;
     std::vector<std::shared_ptr<Updatable>> _updatable;
@@ -68,8 +68,13 @@ protected:
         if (ImGui::Begin("GUI", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::Text("FPS %.1f", static_cast<double>(ImGui::GetIO().Framerate));
 
-            if (ImGui::Button("Button")) {
-                _logger->info("button was pressed");                
+            if (ImGui::Button("Speed+")) {
+                auto old_spd = _cameraMover->getSpeed();
+                _cameraMover->setSpeed(old_spd * 2);
+            }
+            if (ImGui::Button("Speed-")) {
+                auto old_spd = _cameraMover->getSpeed();
+                _cameraMover->setSpeed(old_spd / 2);
             }
         }
         ImGui::End();
@@ -83,7 +88,7 @@ protected:
         _drawable.push_back(std::make_shared<Square>(4.0f));
 
         _logger->debug("creating terrain...");
-        auto terrain = std::make_shared<Terrain>(100, 1000.0f, _params.view_distance);
+        auto terrain = std::make_shared<Terrain>(1000, 1000.0f, _params.view_distance);
         _drawable.push_back(terrain);
         _player_dependable.push_back(terrain);
 

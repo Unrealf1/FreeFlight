@@ -105,9 +105,9 @@ Model<> Terrain::createChunkModel() {
     mesh.reserve(_points_in_chunk * 2);
 
     float cur_row = 0.5f;
-    for (size_t i = 0; i < _points_in_chunk - 1; ++i) { // from far to near
+    for (size_t i = 0; i < _points_in_chunk; ++i) { // from far to near
         float cur_column = -0.5f;
-        for (size_t j = 0; j < _points_in_chunk - 1; ++j) { // from left to right
+        for (size_t j = 0; j < _points_in_chunk; ++j) { // from left to right
             int far_left_ind = i * _points_in_chunk + j;
             int far_right_ind = i * _points_in_chunk + j + 1;
             int near_left_ind = (i+1) * _points_in_chunk + j;
