@@ -6,7 +6,14 @@
 #include <fstream>
 
 
-GLuint createProgram(GLuint vs, GLuint fs) {
+static void inline checkErrorLength(GLint errorLength, const std::string& error_reason) {
+    if (errorLength < 0) {
+        spdlog::critical("Could not read error message({}): error length is less than 0", error_reason);
+        exit(2);
+    }
+}
+
+inline GLuint createProgram(GLuint vs, GLuint fs) {
     //Создаем шейдерную программу
     GLuint program = glCreateProgram();
 
@@ -24,19 +31,22 @@ GLuint createProgram(GLuint vs, GLuint fs) {
         GLint errorLength;
         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &errorLength);
 
+        std::string reason = "Failed to link the program";
+        checkErrorLength(errorLength, reason);
+
         std::vector<char> errorMessage;
-        errorMessage.resize(errorLength);
+        errorMessage.resize(static_cast<std::size_t>(errorLength));
 
         glGetProgramInfoLog(program, errorLength, 0, errorMessage.data());
 
-        spdlog::critical("Failed to link the program:\n{}", errorMessage.data());
+        spdlog::critical("{}:\n{}", reason, errorMessage.data());
 
         exit(1);
     }
     return program;
 }
 
-std::string extractShaderText(const std::string& filepath) {
+inline std::string  extractShaderText(const std::string& filepath) {
     std::ifstream shaderFile(filepath.c_str());
     if (shaderFile.fail()) {
         spdlog::critical("Failed to load shader file {}", filepath);
@@ -48,7 +58,7 @@ std::string extractShaderText(const std::string& filepath) {
     return shaderFileContent;
 }
 
-GLuint createShader(const char* shaderText, GLenum type) {
+inline GLuint createShader(const char* shaderText, GLenum type) {
     //Создаем шейдерный объект
     GLuint shader = glCreateShader(type);
 
@@ -65,22 +75,25 @@ GLuint createShader(const char* shaderText, GLenum type) {
         GLint errorLength;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &errorLength);
 
+        std::string reason = "Failed to compile the shader";
+        checkErrorLength(errorLength, reason);
+
         std::vector<char> errorMessage;
-        errorMessage.resize(errorLength);
+        errorMessage.resize(static_cast<std::size_t>(errorLength));
 
         glGetShaderInfoLog(shader, errorLength, 0, errorMessage.data());
 
-        spdlog::critical("Failed to compile the shader:\n {}", errorMessage.data());
+        spdlog::critical("{}:\n {}", reason, errorMessage.data());
 
         exit(1);
     }
     return shader;
 }
 
-GLuint createVertexShader(const char* vertexShaderText) {
+inline GLuint createVertexShader(const char* vertexShaderText) {
     return createShader(vertexShaderText, GL_VERTEX_SHADER);
 }
 
-GLuint createFragmentShader(const char* fragmentShaderText) {
+inline GLuint createFragmentShader(const char* fragmentShaderText) {
     return createShader(fragmentShaderText, GL_FRAGMENT_SHADER);
 }

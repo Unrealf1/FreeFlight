@@ -15,7 +15,7 @@ public:
         std::vector<float> flattened;
         flattened.reserve(mesh.size() * Point::length());
         for (auto& point : mesh) {
-            for (std::size_t i = 0; i < Point::length(); ++i)
+            for (glm::vec3::length_type i = 0; i < Point::length(); ++i)
             flattened.push_back(point[i]);
         }
         return flattened;
@@ -24,10 +24,10 @@ public:
     template<typename Point> 
     static GraphicObject initObject(const Model<Point>& model) {
         GraphicObject _go;
-        uint32_t total_points = model.mesh.size();
+        auto total_points = model.mesh.size();
         auto coords = flattenMesh(model.mesh);
         auto norms = flattenMesh(model.norms);
-        _go.vertex_cnt = total_points;
+        _go.vertex_cnt = static_cast<GLsizei>(total_points);
         // create vao
         glGenVertexArrays(1, &_go.vao);
         glBindVertexArray(_go.vao);

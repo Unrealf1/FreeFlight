@@ -4,6 +4,8 @@
 #include "render/DrawableUnit.hpp"
 #include "camera/Camera.hpp"
 #include "primitives/Square.hpp"
+#include "player/PlayerController.hpp"
+#include "terrain/Terrain.hpp"
 
 
 class TestApplication: public Application {
@@ -39,6 +41,7 @@ protected:
 
     std::vector<std::shared_ptr<DrawableUnit>> _drawable;
     std::vector<std::shared_ptr<Updatable>> _updatable;
+    std::vector<std::shared_ptr<PlayerDependable>> _player_dependable;
 
     virtual void draw() override {
         int width, height;
@@ -63,7 +66,7 @@ protected:
 
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
         if (ImGui::Begin("GUI", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("FPS %.1f", ImGui::GetIO().Framerate);
+            ImGui::Text("FPS %.1f", static_cast<double>(ImGui::GetIO().Framerate));
 
             if (ImGui::Button("Button")) {
                 _logger->info("button was pressed");                
@@ -73,12 +76,16 @@ protected:
     }
 
     virtual void prepareScene() override {
-        _cameraMover = std::make_unique<OrbitCameraMover>();
-        //_cameraMover = std::make_unique<FreeCameraMover>(5.0f);
+        //_cameraMover = std::make_unique<OrbitCameraMover>();
+        _cameraMover = std::make_unique<FreeCameraMover>(20.0f);
         _cameraMover.get()->setNearFarPlanes(_params.near_plane, _params.far_plane);
-        _cameraMover.get()->setNearFarPlanes(0.1f, 2000.0f);
 
-        _drawable.push_back(std::make_shared<Square>(10));
+        _drawable.push_back(std::make_shared<Square>(4.0f));
+
+        _logger->debug("creating terrain...");
+        auto terrain = std::make_shared<Terrain>(100, 1000.0f, _params.view_distance);
+        _drawable.push_back(terrain);
+        _player_dependable.push_back(terrain);
 
         for (auto& item : _drawable) {
             item->init();
@@ -90,6 +97,13 @@ protected:
 
         for (auto& item : _updatable) {
             item->update(info);
+        }
+
+        PlayerInfo playerInfo;
+        playerInfo.pos = _cameraMover->getPos();
+
+        for (auto& item : _player_dependable) {
+            item->playerUpdate(playerInfo);
         }
     }
 

@@ -21,5 +21,3 @@ public:
 private:
     static std::unordered_map<std::string, GLuint> _programs;
 };
-
-std::unordered_map<std::string, GLuint> ProgramContainer::_programs;

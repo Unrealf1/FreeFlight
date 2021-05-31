@@ -1,6 +1,7 @@
 #include "terrain/Terrain.hpp"
 #include "render/Drawer.hpp"
 #include "render/ProgramContainer.hpp"
+#include "render/Program.hpp"
 #include "render/RenderDefs.hpp"
 #include "render/GraphicsInitializer.hpp"
 #include "render/Program.hpp"
@@ -12,21 +13,39 @@
 #include <spdlog/spdlog.h>
 
 
-
 static const char* const terrain_program_name = "terrain_program";
 
 void Terrain::draw(const RenderInfo& info) {
     DrawInfo drawInfo;
     Drawer::prepareDraw(drawInfo);
 
-    std::vector<glm::mat4> matrices;
-    matrices.reserve(_active_chunks.size());
+    //loading heights data to the gpu
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
+    const size_t chunk_data_size = _points_in_chunk * _points_in_chunk;
+    for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
+        auto& chunk = _active_chunks[c_i];
+        auto chunk_offset = c_i * chunk_data_size;
+        for (size_t i = 0; i < chunk._vertices.size(); ++i) {
+            for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
+                _heights[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].height;
+                chunk._heights_buffer_offset = chunk_offset;
+            }
+        }
+    }
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, heights_buffer_size, _heights);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    std::vector<ChunkData> datum;
+    datum.reserve(_active_chunks.size());
     auto base_mat = glm::mat4(1.0f);
     std::transform(
         _active_chunks.begin(), 
         _active_chunks.end(), 
-        std::back_inserter(matrices), [&base_mat](const TerrainChunk& c){ 
-            return glm::translate(base_mat, glm::vec3(c._center_location, 0.0f));
+        std::back_inserter(datum), [&base_mat, this](const TerrainChunk& c){
+            ChunkData result;
+            result.model_mat = glm::translate(base_mat, glm::vec3(c._center_location, 0.0f)) * _scale_mat;
+            result.heights_buffer_offset = c._heights_buffer_offset;
+            return result;
     });
 
     auto program = ProgramContainer::getProgram(terrain_program_name);
@@ -47,28 +66,106 @@ void Terrain::draw(const RenderInfo& info) {
         glm::value_ptr(info.proj_mat)
     );
 
-    const auto num_chunks = std::min(instance_render_limit, matrices.size()); 
+    glUniform1i(
+        glGetUniformLocation(program, "chunk_size"),
+        static_cast<int>(_points_in_chunk)
+    );
+
+    // GLuint block_index = 0;
+    // block_index = glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "terrain_heights");
+    // //spdlog::info("block index is {}", block_index);
+    // GLuint ssbo_binding_point_index = 1;
+    // glShaderStorageBlockBinding(program, block_index, ssbo_binding_point_index);
+
+    const auto num_chunks = std::min(instance_render_limit, datum.size()); 
     for(size_t i = 0; i < num_chunks; i++) {
         std::string index = std::to_string(i);
         glUniformMatrix4fv(
             glGetUniformLocation(program, ("models[" + index + "]").c_str()),
             1,
             GL_FALSE,
-            glm::value_ptr(matrices[i])
+            glm::value_ptr(datum[i].model_mat)
         );
-
-        glDrawArraysInstanced(GL_TRIANGLES, 0, _graphics.vertex_cnt, num_chunks);
+        glUniform1i(
+            glGetUniformLocation(program, ("offsets[" + index + "]").c_str()),
+            datum[i].heights_buffer_offset
+        );
+        
     } 
+    glDrawArraysInstanced(GL_TRIANGLES, 0, _graphics.vertex_cnt, num_chunks);
+    glBindVertexArray(0);
+    
+}
+
+Model<> Terrain::createChunkModel() {
+    float step = 1.0f / _points_in_chunk;
+    spdlog::info("step is {}", step);
+
+    Mesh<> mesh;
+    mesh.reserve(_points_in_chunk * 2);
+
+    float cur_row = 0.5f;
+    for (size_t i = 0; i < _points_in_chunk - 1; ++i) { // from far to near
+        float cur_column = -0.5f;
+        for (size_t j = 0; j < _points_in_chunk - 1; ++j) { // from left to right
+            int far_left_ind = i * _points_in_chunk + j;
+            int far_right_ind = i * _points_in_chunk + j + 1;
+            int near_left_ind = (i+1) * _points_in_chunk + j;
+            int near_right_ind = (i+1) * _points_in_chunk + j + 1;
+
+            // upper triangle
+            mesh.push_back(glm::vec3(cur_column, cur_row, far_left_ind));
+            mesh.push_back(glm::vec3(cur_column, cur_row - step, near_left_ind));
+            mesh.push_back(glm::vec3(cur_column + step, cur_row, far_right_ind));
+
+            //lower triangle
+            mesh.push_back(glm::vec3(cur_column + step, cur_row, far_right_ind));
+            mesh.push_back(glm::vec3(cur_column, cur_row - step, near_left_ind));
+            mesh.push_back(glm::vec3(cur_column + step, cur_row - step, near_right_ind));
+
+            cur_column += step;
+        }
+        cur_row -= step;
+    }
+    spdlog::info("mesh size is {}", mesh.size());
+    Mesh<> norms(mesh.size(), {0.0f, 0.0f, 1.0f});
+
+    return {mesh, norms};
+
+    //  return {
+    //     Mesh<> {
+    //         glm::vec3{-_chunk_model_offset, -_chunk_model_offset, 0.0f}, 
+    //         glm::vec3{_chunk_model_offset, -_chunk_model_offset, 0.0f},
+    //         glm::vec3{_chunk_model_offset, _chunk_model_offset, 0.0f},
+    //         glm::vec3{_chunk_model_offset, _chunk_model_offset, 0.0f},
+    //         glm::vec3{-_chunk_model_offset, _chunk_model_offset, 0.0f},
+    //         glm::vec3{-_chunk_model_offset, -_chunk_model_offset, 0.0f}
+    //     },
+    //     Mesh<> {
+    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
+    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
+    //         glm::vec3{0.0f, 0.0f, 1.0f},
+    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
+    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
+    //         glm::vec3{0.0f, 0.0f, 1.0f}
+    //     }
+    // }; 
 }
 
 void Terrain::init() {
-    _graphics = GraphicsInitializer::initObject(_chunk_base_model);
+    spdlog::debug("terrain initializing...");
+
+    auto chunk_base_model = createChunkModel();
+
+    _graphics = GraphicsInitializer::initObject(chunk_base_model);
+
+    spdlog::info("graphics has {} vertices", _graphics.vertex_cnt);
 
     if (ProgramContainer::checkProgram(terrain_program_name)) {
         return;
     }
 
-    auto text = extractShaderText("shaders/Basic.vert");
+    auto text = extractShaderText("shaders/Terrain.vert");
     auto vertex_shader = createVertexShader(text.c_str());
 
     text = extractShaderText("shaders/Basic.frag");
@@ -77,6 +174,14 @@ void Terrain::init() {
     auto prog = createProgram(vertex_shader, frag_shader);
 
     ProgramContainer::registerProgram(terrain_program_name, prog);
+
+    _heights = new float[heights_buffer_size];
+    glGenBuffers(1, &_heights_ssbo);
+    spdlog::info("ssbo is {}", _heights_ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, heights_buffer_size * sizeof(float), _heights, GL_DYNAMIC_DRAW/*GLenum usage*/);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _heights_ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 Terrain::constChunkIt_t Terrain::findChunkCloseTo(
@@ -87,15 +192,15 @@ Terrain::constChunkIt_t Terrain::findChunkCloseTo(
         container.begin(), 
         container.end(), 
         [&position, this](const TerrainChunk& c) { 
-            return glm::length(c._center_location - position) < _chunk_size;
+            return glm::length(c._center_location - position) < _chunk_length / 1.5f;
         }
     );
 }
 
 float Terrain::get_closest_chunk_center(float a) {
-    int sign = a > 0 ? 1 : -1;
+    auto sign = a > 0.0f ? 1.0f : -1.0f;
     a = a < 0.0f ? -a : a;
-    if (a <= _chunk_half_length) {
+    if (a <= _chunk_length / 2.0f) {
         return 0.0f;
     }
     //TODO: optimize
@@ -115,16 +220,20 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
     TerrainChunk result;
     result._center_location = position;
     std::vector<std::vector<float>> heightmap;
-    heightmap.reserve(_chunk_size);
+    if (_points_in_chunk > chunk_size_limit) {
+        spdlog::critical("too much points in one chunk");
+        exit(1);
+    }
+    heightmap.resize(_points_in_chunk);
     for (auto& row : heightmap) {
-        row.reserve(_chunk_size);
+        row.resize(_points_in_chunk);
     }
 
-    auto low_left = position - glm::vec2(_chunk_length, _chunk_length);
+    auto far_left = position + glm::vec2(-_chunk_length/2.0f, _chunk_length/2.0f);
     spdlog::info("requesting heights from biome manager");
-    spdlog::info("biomeManager address is {}", (void*)_biomeManager.get());
-    _biomeManager->generateHeights(heightmap, low_left);
+    _biomeManager->generateHeights(heightmap, far_left, 1.0f/_points_in_chunk * _chunk_length);
     spdlog::info("transforming heightmap into chunk");
+
     std::transform(
         heightmap.begin(), 
         heightmap.end(), 
@@ -174,7 +283,7 @@ Terrain::constChunkIt_t Terrain::getChunkCloseTo(const glm::vec2& position) {
 }
 
 void Terrain::check_chunks_containers() {
-    spdlog::debug("active chunks: {}. archived chunks: {}", _active_chunks.size(), _archived_chunks.size());
+    //spdlog::debug("active chunks: {}. archived chunks: {}", _active_chunks.size(), _archived_chunks.size());
     while (_active_chunks.size() > _active_chunk_limit) {
         _active_chunks.pop_front();
     }
@@ -185,16 +294,17 @@ void Terrain::check_chunks_containers() {
 }
 
 void Terrain::playerUpdate(const PlayerInfo& player) {
-    glm::vec2 top_left{player.pos.x - _chunk_size, player.pos.y + _chunk_size};
+    glm::vec2 top_left{player.pos.x - _chunk_length, player.pos.y + _chunk_length};
 
     chunkContainer_t temp_chunks;
 
-    std::size_t chunk_window = player.view_distance / _chunk_size;
+    std::size_t chunk_window = _view_distance / _chunk_length;
+    auto chunk_window_len = static_cast<float>(chunk_window);
 
     for (size_t i = 0; i < chunk_window * 2 + 1; ++i) {
-        float cur_x = player.pos.x + float(_chunk_length * chunk_window) - float(_chunk_length * i);
+        float cur_x = player.pos.x + _chunk_length * chunk_window_len - float(_chunk_length * i);
         for (size_t j = 0; j < chunk_window * 2 + 1; ++j) {
-            float cur_y = player.pos.y + float(_chunk_length * chunk_window) - float(_chunk_length * j);
+            float cur_y = player.pos.y + _chunk_length * chunk_window_len - float(_chunk_length * j);
             (void)getChunkCloseTo({cur_x, cur_y});
         }
     }

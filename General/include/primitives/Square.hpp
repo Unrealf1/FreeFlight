@@ -3,6 +3,8 @@
 #include "render/DrawableUnit.hpp"
 #include "render/RenderDefs.hpp"
 #include "render/Program.hpp"
+#include "render/ProgramContainer.hpp"
+#include "render/GraphicsInitializer.hpp"
 
 #include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
@@ -15,22 +17,23 @@ public:
     }
 
     virtual void draw(const RenderInfo& info) {
-        glUseProgram(_program);
+        auto program = ProgramContainer::getProgram("simple prog");
+        glUseProgram(program);
         glBindVertexArray(_go.vao);
         glUniformMatrix4fv(
-            glGetUniformLocation(_program, "view"),
+            glGetUniformLocation(program, "view"),
             1,
             GL_FALSE,
             glm::value_ptr(info.view_mat)
         );
         glUniformMatrix4fv(
-            glGetUniformLocation(_program, "projection"),
+            glGetUniformLocation(program, "projection"),
             1,
             GL_FALSE,
             glm::value_ptr(info.proj_mat)
         );
         glUniformMatrix4fv(
-            glGetUniformLocation(_program, "model"),
+            glGetUniformLocation(program, "model"),
             1,
             GL_FALSE,
             glm::value_ptr(_modelMat)
@@ -40,18 +43,15 @@ public:
     }
 
     virtual void init() {
-        spdlog::debug("Square initializing...");
-        _go.vertex_cnt = coords.size() / 3;
-        // create vao
-        glGenVertexArrays(1, &_go.vao);
-        glBindVertexArray(_go.vao);
-        // create vbo for coords
-        glGenBuffers(1, &_go.vbo_coords);
-        glBindBuffer(GL_ARRAY_BUFFER, _go.vbo_coords);
-        glBufferData(GL_ARRAY_BUFFER, coords.size() * sizeof(float), coords.data(), GL_STATIC_DRAW);
-        // enable vbo for coords
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+        spdlog::debug("Square: initializing...");
+        
+        _go = GraphicsInitializer::initObject(_model);
+
+        if (ProgramContainer::checkProgram("simple prog")) {
+            return;
+        }
+
+        spdlog::debug("Square: creating program ...");
 
         auto text = extractShaderText("shaders/Basic.vert");
         auto vertex_shader = createVertexShader(text.c_str());
@@ -59,22 +59,34 @@ public:
         text = extractShaderText("shaders/Basic.frag");
         auto frag_shader = createFragmentShader(text.c_str());
 
-        _program = createProgram(vertex_shader, frag_shader);
+        auto program = createProgram(vertex_shader, frag_shader);
+        ProgramContainer::registerProgram("simple prog", program);
     }
 
 private:
-    GLuint _program;
     GraphicObject _go;
     glm::mat4 _modelMat;
 
-    const float side_size = 2.0f;
+    const float side_size = 1.0f;
 
-    std::vector<float> coords = {
-        0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, side_size,
-        side_size, 0.0f, side_size,
-        side_size, 0.0f, side_size,
-        side_size, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.0f
+    Model<glm::vec3> _model{
+        // vertices
+        {
+            {0.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, side_size},
+            {side_size, 0.0f, side_size},
+            {side_size, 0.0f, side_size},
+            {side_size, 0.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f}
+        },
+        // norms
+        {
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+        }
     };
 };

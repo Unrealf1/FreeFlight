@@ -124,7 +124,7 @@ protected:
         ImGuiIO& io = ImGui::GetIO(); (void)io;
 
         ImGui_ImplGlfw_InitForOpenGL(_window, false);
-        ImGui_ImplOpenGL3_Init("#version 330");
+        ImGui_ImplOpenGL3_Init("#version 430");
     }
 
     virtual void updateGUI() {

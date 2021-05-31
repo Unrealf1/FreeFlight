@@ -12,8 +12,14 @@
 
 
 class Terrain: public DrawableUnit, public PlayerDependable  {
+    struct ChunkData {
+        GLuint heights_buffer_offset;
+        glm::mat4 model_mat;
+    };
+
 public:
-    explicit Terrain(std::size_t chunk_size): _chunk_size(chunk_size) {}
+    explicit Terrain(std::size_t points_in_chunk, float chunk_scale, float view_distance)
+    : _points_in_chunk(points_in_chunk), _chunk_length(chunk_scale), _view_distance(view_distance) {}
     virtual ~Terrain() = default;
 
     void draw(const RenderInfo&) override;
@@ -30,32 +36,22 @@ private:
     GraphicObject _graphics;
     chunkContainer_t _archived_chunks;
     chunkContainer_t _active_chunks;
-    const std::size_t _active_chunk_limit = instance_render_limit;
+    static constexpr std::size_t _active_chunk_limit = instance_render_limit;
     const std::size_t _archived_chunks_limit = 1000;
+    static constexpr std::size_t chunk_size_limit = 1000;
+    static constexpr std::size_t max_points_in_chunk = chunk_size_limit * chunk_size_limit;
+    static constexpr std::size_t heights_buffer_size = max_points_in_chunk * _active_chunk_limit;
 
-    const std::size_t _chunk_size;
+    // number of vertices in one side of a chunk
+    const std::size_t _points_in_chunk;
+    GLuint _heights_ssbo;
+    float* _heights;
     
-    const float _chunk_length = static_cast<float>(_chunk_size);
-    const float _chunk_half_length = _chunk_length / 2.0f;
-
-    Model<> _chunk_base_model = {
-        Mesh<> {
-            glm::vec3{-_chunk_half_length, -_chunk_half_length, 0.0f}, 
-            glm::vec3{_chunk_half_length, -_chunk_half_length, 0.0f},
-            glm::vec3{_chunk_half_length, _chunk_half_length, 0.0f},
-            glm::vec3{_chunk_half_length, _chunk_half_length, 0.0f},
-            glm::vec3{-_chunk_half_length, _chunk_half_length, 0.0f},
-            glm::vec3{-_chunk_half_length, -_chunk_half_length, 0.0f}
-        },
-        Mesh<> {
-            glm::vec3{0.0f, 0.0f, 1.0f}, 
-            glm::vec3{0.0f, 0.0f, 1.0f}, 
-            glm::vec3{0.0f, 0.0f, 1.0f},
-            glm::vec3{0.0f, 0.0f, 1.0f}, 
-            glm::vec3{0.0f, 0.0f, 1.0f}, 
-            glm::vec3{0.0f, 0.0f, 1.0f}
-        }
-    }; 
+    // actual length of the chunk
+    const float _chunk_length;
+    glm::mat4 _scale_mat = glm::scale(glm::mat4(1.0f), glm::vec3(_chunk_length, _chunk_length, 1.0f));
+    
+    float _view_distance;
 
     std::unique_ptr<BiomeManager> _biomeManager = std::make_unique<BiomeManager>();
 
@@ -65,4 +61,7 @@ private:
     TerrainChunk generateChunkAt(const glm::vec2& position);
     constChunkIt_t getChunkCloseTo(const glm::vec2& position);
     void check_chunks_containers();
+
+    Model<> createChunkModel();
+
 };

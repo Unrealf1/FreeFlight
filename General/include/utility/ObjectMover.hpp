@@ -47,7 +47,7 @@ public:
         glm::vec3 rightDir = glm::vec3(1.0f, 0.0f, 0.0f) * _rot;
 
         glm::vec3 upDir = glm::vec3(0.0f, 1.0f, 0.0f) * _rot;
-        
+
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             _pos += forwDir * actual_speed * static_cast<float>(dt);
         }

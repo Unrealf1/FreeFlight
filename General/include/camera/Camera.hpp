@@ -86,7 +86,11 @@ public:
 	void showOrientationParametersImgui() override;
 	void setOrientationParameters(double r, double phi, double theta) { _r = r; _phiAng = phi; _thetaAng = theta; }
     glm::vec3 getPos() override {
-        return glm::vec3(0.0f);
+        return glm::vec3(
+            glm::cos(_phiAng) * glm::cos(_thetaAng), 
+            glm::sin(_phiAng) * glm::cos(_thetaAng), 
+            (glm::sin(_thetaAng) + 0.5)
+        ) * static_cast<float>(_r);
     }
 protected:
     //Положение виртуальный камеры задается в сферических координат
