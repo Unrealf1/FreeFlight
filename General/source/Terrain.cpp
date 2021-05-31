@@ -82,7 +82,7 @@ void Terrain::draw(const RenderInfo& info) {
 }
 
 Model<> Terrain::createChunkModel() {
-    float step = 1.0f / _points_in_chunk;
+    float step = 1.01f / (_points_in_chunk); // -1 to reduce artifats on the edges of chunks
     spdlog::info("step is {}", step);
 
     Mesh<> mesh;

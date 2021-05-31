@@ -13,6 +13,9 @@ struct ApplicationParameters {
     spdlog::level::level_enum log_level;
 
     std::string window_name;
+
+    int points_in_chunk;
+    float chunk_length;
 };
 
 class ApplicationParametersReader {

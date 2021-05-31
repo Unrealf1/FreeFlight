@@ -6,3 +6,4 @@ CMakeSettings.json
 .cmake-build-debug/**
 log/**
 imgui.ini
+callgrind.out*

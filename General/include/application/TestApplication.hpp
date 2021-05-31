@@ -67,6 +67,8 @@ protected:
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
         if (ImGui::Begin("GUI", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::Text("FPS %.1f", static_cast<double>(ImGui::GetIO().Framerate));
+            auto pos = _cameraMover->getPos();
+            ImGui::Text("Coordinates(x, y, z): %.1f, %.1f, %.1f", pos.x, pos.y, pos.z);
 
             if (ImGui::Button("Speed+")) {
                 auto old_spd = _cameraMover->getSpeed();
@@ -88,7 +90,7 @@ protected:
         _drawable.push_back(std::make_shared<Square>(4.0f));
 
         _logger->debug("creating terrain...");
-        auto terrain = std::make_shared<Terrain>(500, 1000.0f, _params.view_distance);
+        auto terrain = std::make_shared<Terrain>(_params.points_in_chunk, _params.chunk_length, _params.view_distance);
         _drawable.push_back(terrain);
         _player_dependable.push_back(terrain);
 
