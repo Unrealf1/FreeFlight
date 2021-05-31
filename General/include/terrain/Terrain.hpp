@@ -64,4 +64,6 @@ private:
 
     Model<> createChunkModel();
 
+    void updateHeights();
+
 };

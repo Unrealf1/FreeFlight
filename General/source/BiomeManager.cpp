@@ -17,11 +17,11 @@ void BiomeManager::generateHeights(
         y -= step;
         for (auto& elem : row) {
             //elem = 1.0f * x;
-            elem = SimplexNoise1234::noise(0.01f * x, 0.01f * y);
+            elem = SimplexNoise1234::noise(0.0008f * x, 0.0008f * y);
             // elem = perlin(x * 1000.0f, y) * 10000.0f;
             // spdlog::debug(elem);
-            //elem = std::sin(0.1f * x); //+ std::cos(0.1f * y);
-            elem *= 10.0f;
+            elem += std::sin(0.001f * x) / 10.0f; 
+            elem *= 100.0f;
             //elem = (std::sin(0.01f * x) + std::cos(0.01f * y)) / 2.0f;
             x += step;
             

@@ -88,7 +88,7 @@ protected:
         _drawable.push_back(std::make_shared<Square>(4.0f));
 
         _logger->debug("creating terrain...");
-        auto terrain = std::make_shared<Terrain>(1000, 1000.0f, _params.view_distance);
+        auto terrain = std::make_shared<Terrain>(500, 1000.0f, _params.view_distance);
         _drawable.push_back(terrain);
         _player_dependable.push_back(terrain);
 

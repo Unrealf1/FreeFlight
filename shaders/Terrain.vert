@@ -45,5 +45,5 @@ void main() {
     vec3 final_pos = vec3(vertexPosition.xy, height);
     gl_Position = projection * view * model * vec4(final_pos, 1.0);
     //colour = vec3(x_ratio, y_ratio, height_index);
-    colour = vec3((height + 1.0) / 5.0, 1.0, 0.0);
+    colour = vec3((height + 1.0) / 100.0, 1.0, 0.0);
 }

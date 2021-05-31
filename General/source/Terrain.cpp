@@ -19,22 +19,6 @@ void Terrain::draw(const RenderInfo& info) {
     DrawInfo drawInfo;
     Drawer::prepareDraw(drawInfo);
 
-    //loading heights data to the gpu
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
-    const size_t chunk_data_size = _points_in_chunk * _points_in_chunk;
-    for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
-        auto& chunk = _active_chunks[c_i];
-        auto chunk_offset = c_i * chunk_data_size;
-        for (size_t i = 0; i < chunk._vertices.size(); ++i) {
-            for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
-                _heights[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].height;
-                chunk._heights_buffer_offset = chunk_offset;
-            }
-        }
-    }
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, heights_buffer_size, _heights);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
     std::vector<ChunkData> datum;
     datum.reserve(_active_chunks.size());
     auto base_mat = glm::mat4(1.0f);
@@ -278,6 +262,7 @@ Terrain::constChunkIt_t Terrain::getChunkCloseTo(const glm::vec2& position) {
     spdlog::debug("Generating new chunk at {} {}", chunk_pos.x, chunk_pos.y);
     auto new_chunk = generateChunkAt(chunk_pos);
     _active_chunks.push_back(new_chunk);
+    updateHeights();
     
     return (--_active_chunks.end());
 }
@@ -309,4 +294,22 @@ void Terrain::playerUpdate(const PlayerInfo& player) {
         }
     }
     check_chunks_containers();
+}
+
+void Terrain::updateHeights() {
+    //loading heights data to the gpu
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
+    const size_t chunk_data_size = _points_in_chunk * _points_in_chunk;
+    for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
+        auto& chunk = _active_chunks[c_i];
+        auto chunk_offset = c_i * chunk_data_size;
+        for (size_t i = 0; i < chunk._vertices.size(); ++i) {
+            for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
+                _heights[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].height;
+                chunk._heights_buffer_offset = chunk_offset;
+            }
+        }
+    }
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, heights_buffer_size, _heights);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
