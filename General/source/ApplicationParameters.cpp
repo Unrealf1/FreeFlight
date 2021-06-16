@@ -12,6 +12,7 @@ static const char* const log_level_id = "log_level";
 static const char* const window_name_id = "window_name";
 static const char* const points_in_chunk_id = "points_in_chunk";
 static const char* const chunk_length_id = "chunk_length";
+static const char* const max_fps_id = "max_fps";
 
 
 ApplicationParameters ApplicationParametersReader::read(const std::string& filepath) {
@@ -41,6 +42,7 @@ ApplicationParameters ApplicationParametersReader::read(const std::string& filep
     result.log_location = root[log_location_id].asString();
     result.window_name = root[window_name_id].asString();
     result.points_in_chunk = root[points_in_chunk_id].asInt();
+    result.max_fps = root[max_fps_id].asInt();
 
     return result;
 }
@@ -66,6 +68,7 @@ void ApplicationParametersWriter::write(const ApplicationParameters& parameters,
     json[window_name_id] = parameters.window_name;
     json[points_in_chunk_id] = parameters.points_in_chunk;
     json[chunk_length_id] = parameters.chunk_length;
+    json[max_fps_id] = parameters.max_fps;
 
     auto file = std::ofstream(filepath);
     file << json;

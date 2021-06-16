@@ -29,9 +29,9 @@ private:
             float x = far_left.x;
             y -= step;
             for (auto& elem : row) {
-                elem = SimplexNoise1234::noise(0.0008f * x, 0.0008f * y);
+                elem = SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 10.0f;
                 //elem += std::sin(0.001f * x) / 2.0f; 
-                elem *= 10.0f;
+                elem += SimplexNoise1234::noise(0.008f * (x + 777.0f), 0.008f * (y + 12345.0f)) * 5.0f;;
                 x += step;
             }
         }

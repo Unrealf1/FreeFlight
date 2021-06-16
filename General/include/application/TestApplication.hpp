@@ -7,10 +7,18 @@
 #include "player/PlayerController.hpp"
 #include "terrain/Terrain.hpp"
 
+#include <chrono>
+#include <thread>
+
+using namespace std::chrono_literals;
+
 
 class TestApplication: public Application {
+    using frame_clock = std::chrono::steady_clock;
+
 public:
-    TestApplication(const ApplicationParameters& params): Application(params) { }
+    TestApplication(const ApplicationParameters& params): Application(params), 
+    _max_fps(params.max_fps), _min_duration(frame_clock::duration(1s) / _max_fps) { }
 
     virtual void handleKey(int key, int scancode, int action, int mods) override {
         if (action == GLFW_PRESS)
@@ -43,6 +51,11 @@ protected:
     std::vector<std::shared_ptr<Updatable>> _updatable;
     std::vector<std::shared_ptr<PlayerDependable>> _player_dependable;
 
+    frame_clock::time_point _last_frame_time;
+    int64_t _fps = 0; // current
+    int64_t _max_fps;
+    frame_clock::duration _min_duration;
+
     virtual void draw() override {
         int width, height;
         glfwGetFramebufferSize(_window, &width, &height);
@@ -67,6 +80,7 @@ protected:
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
         if (ImGui::Begin("GUI", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::Text("FPS %.1f", static_cast<double>(ImGui::GetIO().Framerate));
+            //ImGui::Text("FPS: %i", _fps);
             auto pos = _cameraMover->getPos();
             ImGui::Text("Coordinates(x, y, z): %.1f, %.1f, %.1f", pos.x, pos.y, pos.z);
 
@@ -83,6 +97,7 @@ protected:
     }
 
     virtual void prepareScene() override {
+        _logger->error("duration in milliseconds: {}", std::chrono::duration_cast<std::chrono::milliseconds>(_min_duration).count());
         //_cameraMover = std::make_unique<OrbitCameraMover>();
         _cameraMover = std::make_unique<FreeCameraMover>(20.0f);
         _cameraMover.get()->setNearFarPlanes(_params.near_plane, _params.far_plane);
@@ -112,6 +127,13 @@ protected:
         for (auto& item : _player_dependable) {
             item->playerUpdate(playerInfo);
         }
+
+        auto cur_time = frame_clock::now();
+        auto duration = cur_time - _last_frame_time;
+        _last_frame_time = cur_time;
+        _fps = 1s / duration * 0.6 + 0.4 * _fps;
+
+        std::this_thread::sleep_for(_min_duration - duration);
     }
 
     virtual void onRun() override {

@@ -16,6 +16,7 @@ struct ApplicationParameters {
 
     int points_in_chunk;
     float chunk_length;
+    int64_t max_fps;
 };
 
 class ApplicationParametersReader {

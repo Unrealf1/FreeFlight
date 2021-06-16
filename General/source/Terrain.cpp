@@ -134,17 +134,6 @@ TexturedModel<> Terrain::createChunkModel() {
     spdlog::info("mesh size is {}", mesh.size());
     Mesh<> norms(mesh.size(), {0.0f, 0.0f, 1.0f});
 
-    // float repeat_per_chunk = _chunk_length / 25;
-    // Mesh<glm::vec2> chunk_tex_coords {
-    //         glm::vec2{0.0f, 0.0f},
-    //         glm::vec2{repeat_per_chunk, 0.0f},
-    //         glm::vec2{repeat_per_chunk, repeat_per_chunk},
-
-    //         glm::vec2{repeat_per_chunk, repeat_per_chunk},
-    //         glm::vec2{0.0f, repeat_per_chunk},
-    //         glm::vec2{0.0f, 0.0f}
-    // };
-
     return {mesh, norms, chunk_tex_coords};
 }
 
@@ -153,7 +142,7 @@ void Terrain::init() {
 
     auto chunk_base_model = createChunkModel();
 
-    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/grass2.jpg");
+    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/ground-1.jpg");
 
     spdlog::info("graphics has {} vertices", _graphics.vertex_cnt);
 
