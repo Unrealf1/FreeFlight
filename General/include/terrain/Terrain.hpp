@@ -62,7 +62,7 @@ private:
     constChunkIt_t getChunkCloseTo(const glm::vec2& position);
     void check_chunks_containers();
 
-    Model<> createChunkModel();
+    TexturedModel<> createChunkModel();
 
     void updateHeights();
 

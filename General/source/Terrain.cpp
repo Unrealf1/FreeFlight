@@ -36,6 +36,9 @@ void Terrain::draw(const RenderInfo& info) {
 
     glUseProgram(program);
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _graphics.texture);
+
     glBindVertexArray(_graphics.vao);
     glUniformMatrix4fv(
         glGetUniformLocation(program, "view"),
@@ -81,17 +84,24 @@ void Terrain::draw(const RenderInfo& info) {
     
 }
 
-Model<> Terrain::createChunkModel() {
-    float step = 1.01f / (_points_in_chunk); // -1 to reduce artifats on the edges of chunks
+TexturedModel<> Terrain::createChunkModel() {
+    float step = 1.0f / (_points_in_chunk - 1);
     spdlog::info("step is {}", step);
 
     Mesh<> mesh;
     mesh.reserve(_points_in_chunk * 2);
 
+    Mesh<glm::vec2> chunk_tex_coords;
+    chunk_tex_coords.reserve(_points_in_chunk * 2);
+
     float cur_row = 0.5f;
-    for (size_t i = 0; i < _points_in_chunk; ++i) { // from far to near
+    float tex_row = 1.0f;
+    float tex_repeat_per_chunk = _chunk_length / 50.0f;
+    float tex_step = step * tex_repeat_per_chunk;
+    for (size_t i = 0; i < _points_in_chunk - 1; ++i) { // from far to near
         float cur_column = -0.5f;
-        for (size_t j = 0; j < _points_in_chunk; ++j) { // from left to right
+        float tex_column = 0.0f;
+        for (size_t j = 0; j < _points_in_chunk - 1; ++j) { // from left to right
             int far_left_ind = i * _points_in_chunk + j;
             int far_right_ind = i * _points_in_chunk + j + 1;
             int near_left_ind = (i+1) * _points_in_chunk + j;
@@ -102,38 +112,40 @@ Model<> Terrain::createChunkModel() {
             mesh.push_back(glm::vec3(cur_column, cur_row - step, near_left_ind));
             mesh.push_back(glm::vec3(cur_column + step, cur_row, far_right_ind));
 
+            chunk_tex_coords.push_back(glm::vec2(tex_column, tex_row));
+            chunk_tex_coords.push_back(glm::vec2(tex_column, tex_row - tex_step));
+            chunk_tex_coords.push_back(glm::vec2(tex_column + tex_step, tex_row));
+
             //lower triangle
             mesh.push_back(glm::vec3(cur_column + step, cur_row, far_right_ind));
             mesh.push_back(glm::vec3(cur_column, cur_row - step, near_left_ind));
             mesh.push_back(glm::vec3(cur_column + step, cur_row - step, near_right_ind));
 
+            chunk_tex_coords.push_back(glm::vec2(tex_column + tex_step, tex_row));
+            chunk_tex_coords.push_back(glm::vec2(tex_column, tex_row - tex_step));
+            chunk_tex_coords.push_back(glm::vec2(tex_column + tex_step, tex_row - tex_step));
+
             cur_column += step;
+            tex_column += tex_step;
         }
+        tex_row -= tex_step;
         cur_row -= step;
     }
     spdlog::info("mesh size is {}", mesh.size());
     Mesh<> norms(mesh.size(), {0.0f, 0.0f, 1.0f});
 
-    return {mesh, norms};
+    // float repeat_per_chunk = _chunk_length / 25;
+    // Mesh<glm::vec2> chunk_tex_coords {
+    //         glm::vec2{0.0f, 0.0f},
+    //         glm::vec2{repeat_per_chunk, 0.0f},
+    //         glm::vec2{repeat_per_chunk, repeat_per_chunk},
 
-    //  return {
-    //     Mesh<> {
-    //         glm::vec3{-_chunk_model_offset, -_chunk_model_offset, 0.0f}, 
-    //         glm::vec3{_chunk_model_offset, -_chunk_model_offset, 0.0f},
-    //         glm::vec3{_chunk_model_offset, _chunk_model_offset, 0.0f},
-    //         glm::vec3{_chunk_model_offset, _chunk_model_offset, 0.0f},
-    //         glm::vec3{-_chunk_model_offset, _chunk_model_offset, 0.0f},
-    //         glm::vec3{-_chunk_model_offset, -_chunk_model_offset, 0.0f}
-    //     },
-    //     Mesh<> {
-    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
-    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
-    //         glm::vec3{0.0f, 0.0f, 1.0f},
-    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
-    //         glm::vec3{0.0f, 0.0f, 1.0f}, 
-    //         glm::vec3{0.0f, 0.0f, 1.0f}
-    //     }
-    // }; 
+    //         glm::vec2{repeat_per_chunk, repeat_per_chunk},
+    //         glm::vec2{0.0f, repeat_per_chunk},
+    //         glm::vec2{0.0f, 0.0f}
+    // };
+
+    return {mesh, norms, chunk_tex_coords};
 }
 
 void Terrain::init() {
@@ -141,7 +153,7 @@ void Terrain::init() {
 
     auto chunk_base_model = createChunkModel();
 
-    _graphics = GraphicsInitializer::initObject(chunk_base_model);
+    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/grass2.jpg");
 
     spdlog::info("graphics has {} vertices", _graphics.vertex_cnt);
 
@@ -149,10 +161,10 @@ void Terrain::init() {
         return;
     }
 
-    auto text = extractShaderText("shaders/Terrain.vert");
+    auto text = extractShaderText("resources/shaders/Terrain.vert");
     auto vertex_shader = createVertexShader(text.c_str());
 
-    text = extractShaderText("shaders/Basic.frag");
+    text = extractShaderText("resources/shaders/Terrain.frag");
     auto frag_shader = createFragmentShader(text.c_str());
 
     auto prog = createProgram(vertex_shader, frag_shader);
@@ -215,7 +227,7 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
 
     auto far_left = position + glm::vec2(-_chunk_length/2.0f, _chunk_length/2.0f);
     spdlog::info("requesting heights from biome manager");
-    _biomeManager->generateHeights(heightmap, far_left, 1.0f/_points_in_chunk * _chunk_length);
+    _biomeManager->generateHeights(heightmap, far_left, 1.0f/(_points_in_chunk - 1) * _chunk_length);
     spdlog::info("transforming heightmap into chunk");
 
     std::transform(
@@ -300,6 +312,7 @@ void Terrain::updateHeights() {
     //loading heights data to the gpu
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
     const size_t chunk_data_size = _points_in_chunk * _points_in_chunk;
+
     for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
         auto& chunk = _active_chunks[c_i];
         auto chunk_offset = c_i * chunk_data_size;

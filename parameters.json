@@ -3,8 +3,8 @@
 	"log_level" : 2,
 	"log_location" : "log/log.txt",
 	"near_plane" : 0.1,
-	"view_distance" : 3000.0,
+	"view_distance" : 2000.0,
 	"window_name" : "Test application",
-	"points_in_chunk" : 200,
+	"points_in_chunk" : 50,
 	"chunk_length" : 1500.0
-}
+} 

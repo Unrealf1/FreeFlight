@@ -75,7 +75,7 @@ public:
         if (!image) {
             spdlog::error("SOIL loading error: {}", SOIL_last_result());
         }
-        
+        spdlog::error("created texture with id {}, w={}, h={}", texture, width, height);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
         glGenerateMipmap(GL_TEXTURE_2D);
         SOIL_free_image_data(image);

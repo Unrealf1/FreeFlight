@@ -53,10 +53,10 @@ public:
 
         spdlog::debug("Square: creating program ...");
 
-        auto text = extractShaderText("shaders/Basic.vert");
+        auto text = extractShaderText("resources/shaders/Basic.vert");
         auto vertex_shader = createVertexShader(text.c_str());
 
-        text = extractShaderText("shaders/Basic.frag");
+        text = extractShaderText("resources/shaders/Basic.frag");
         auto frag_shader = createFragmentShader(text.c_str());
 
         auto program = createProgram(vertex_shader, frag_shader);
