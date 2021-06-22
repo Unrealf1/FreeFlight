@@ -12,8 +12,8 @@ out vec2 TexCoord;
 uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 models[100];
-uniform int offsets[100];
-uniform int chunk_size;
+uniform uint offsets[100];
+uniform uint chunk_size;
 
 out float true_height;
 
@@ -41,7 +41,7 @@ void main() {
     int height_index = int(vertexPosition.z);
 
     mat4 model = models[gl_InstanceID];
-    int offset = offsets[gl_InstanceID];
+    uint offset = offsets[gl_InstanceID];
     float height = terrain_heights_data[offset + height_index];
     true_height = height;
     vec3 final_pos = vec3(vertexPosition.xy, height);

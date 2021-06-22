@@ -82,7 +82,7 @@ protected:
             ImGui::Text("FPS %.1f", static_cast<double>(ImGui::GetIO().Framerate));
             //ImGui::Text("FPS: %i", _fps);
             auto pos = _cameraMover->getPos();
-            ImGui::Text("Coordinates(x, y, z): %.1f, %.1f, %.1f", pos.x, pos.y, pos.z);
+            ImGui::Text("Coordinates(x, y, z): %.1hf, %.1hf, %.1hf", pos.x, pos.y, pos.z);
 
             if (ImGui::Button("Speed+")) {
                 auto old_spd = _cameraMover->getSpeed();
@@ -97,7 +97,6 @@ protected:
     }
 
     virtual void prepareScene() override {
-        _logger->error("duration in milliseconds: {}", std::chrono::duration_cast<std::chrono::milliseconds>(_min_duration).count());
         //_cameraMover = std::make_unique<OrbitCameraMover>();
         _cameraMover = std::make_unique<FreeCameraMover>(20.0f);
         _cameraMover.get()->setNearFarPlanes(_params.near_plane, _params.far_plane);
@@ -131,7 +130,7 @@ protected:
         auto cur_time = frame_clock::now();
         auto duration = cur_time - _last_frame_time;
         _last_frame_time = cur_time;
-        _fps = 1s / duration * 0.6 + 0.4 * _fps;
+        _fps = (1s / duration * 6 + _fps * 4) / 10;
 
         std::this_thread::sleep_for(_min_duration - duration);
     }

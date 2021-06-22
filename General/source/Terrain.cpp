@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 #include <spdlog/spdlog.h>
 
 
@@ -53,9 +54,9 @@ void Terrain::draw(const RenderInfo& info) {
         glm::value_ptr(info.proj_mat)
     );
 
-    glUniform1i(
+    glUniform1ui(
         glGetUniformLocation(program, "chunk_size"),
-        static_cast<int>(_points_in_chunk)
+        static_cast<GLuint>(_points_in_chunk)
     );
 
     // GLuint block_index = 0;
@@ -73,19 +74,20 @@ void Terrain::draw(const RenderInfo& info) {
             GL_FALSE,
             glm::value_ptr(datum[i].model_mat)
         );
-        glUniform1i(
+        glUniform1ui(
             glGetUniformLocation(program, ("offsets[" + index + "]").c_str()),
             datum[i].heights_buffer_offset
         );
         
     } 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, _graphics.vertex_cnt, num_chunks);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, _graphics.vertex_cnt, static_cast<GLsizei>(num_chunks));
     glBindVertexArray(0);
     
 }
 
 TexturedModel<> Terrain::createChunkModel() {
-    float step = 1.0f / (_points_in_chunk - 1);
+    float num_steps = static_cast<float>(_points_in_chunk - 1);
+    float step = 1.0f / num_steps;
     spdlog::info("step is {}", step);
 
     Mesh<> mesh;
@@ -96,16 +98,16 @@ TexturedModel<> Terrain::createChunkModel() {
 
     float cur_row = 0.5f;
     float tex_row = 1.0f;
-    float tex_repeat_per_chunk = _chunk_length / 50.0f;
+    float tex_repeat_per_chunk = _chunk_length / 10.0f;
     float tex_step = step * tex_repeat_per_chunk;
     for (size_t i = 0; i < _points_in_chunk - 1; ++i) { // from far to near
         float cur_column = -0.5f;
         float tex_column = 0.0f;
         for (size_t j = 0; j < _points_in_chunk - 1; ++j) { // from left to right
-            int far_left_ind = i * _points_in_chunk + j;
-            int far_right_ind = i * _points_in_chunk + j + 1;
-            int near_left_ind = (i+1) * _points_in_chunk + j;
-            int near_right_ind = (i+1) * _points_in_chunk + j + 1;
+            float far_left_ind = static_cast<float>(i * _points_in_chunk + j);
+            float far_right_ind = static_cast<float>(i * _points_in_chunk + j + 1);
+            float near_left_ind = static_cast<float>((i+1) * _points_in_chunk + j);
+            float near_right_ind = static_cast<float>((i+1) * _points_in_chunk + j + 1);
 
             // upper triangle
             mesh.push_back(glm::vec3(cur_column, cur_row, far_left_ind));
@@ -142,7 +144,7 @@ void Terrain::init() {
 
     auto chunk_base_model = createChunkModel();
 
-    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/ground-1.jpg");
+    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/grass3.jpg");
 
     spdlog::info("graphics has {} vertices", _graphics.vertex_cnt);
 
@@ -216,7 +218,9 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
 
     auto far_left = position + glm::vec2(-_chunk_length/2.0f, _chunk_length/2.0f);
     spdlog::info("requesting heights from biome manager");
-    _biomeManager->generateHeights(heightmap, far_left, 1.0f/(_points_in_chunk - 1) * _chunk_length);
+    float num_steps = static_cast<float>(_points_in_chunk - 1);
+    float step = 1.0f / num_steps;
+    _biomeManager->generateHeights(heightmap, far_left, step * _chunk_length);
     spdlog::info("transforming heightmap into chunk");
 
     std::transform(
@@ -284,13 +288,13 @@ void Terrain::playerUpdate(const PlayerInfo& player) {
 
     chunkContainer_t temp_chunks;
 
-    std::size_t chunk_window = _view_distance / _chunk_length;
+    auto chunk_window = std::llround(_view_distance / _chunk_length);
     auto chunk_window_len = static_cast<float>(chunk_window);
 
-    for (size_t i = 0; i < chunk_window * 2 + 1; ++i) {
-        float cur_x = player.pos.x + _chunk_length * chunk_window_len - float(_chunk_length * i);
-        for (size_t j = 0; j < chunk_window * 2 + 1; ++j) {
-            float cur_y = player.pos.y + _chunk_length * chunk_window_len - float(_chunk_length * j);
+    for (int64_t i = 0; i < chunk_window * 2 + 1; ++i) {
+        float cur_x = player.pos.x + _chunk_length * chunk_window_len - _chunk_length * float(i);
+        for (int64_t j = 0; j < chunk_window * 2 + 1; ++j) {
+            float cur_y = player.pos.y + _chunk_length * chunk_window_len - _chunk_length * float(j);
             (void)getChunkCloseTo({cur_x, cur_y});
         }
     }
@@ -300,11 +304,11 @@ void Terrain::playerUpdate(const PlayerInfo& player) {
 void Terrain::updateHeights() {
     //loading heights data to the gpu
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
-    const size_t chunk_data_size = _points_in_chunk * _points_in_chunk;
+    const auto chunk_data_size = _points_in_chunk * _points_in_chunk;
 
     for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
         auto& chunk = _active_chunks[c_i];
-        auto chunk_offset = c_i * chunk_data_size;
+        auto chunk_offset = static_cast<uint32_t>(c_i) * chunk_data_size;
         for (size_t i = 0; i < chunk._vertices.size(); ++i) {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
                 _heights[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].height;

@@ -14,6 +14,6 @@ struct TerrainChunk {
 
     glm::vec2 _center_location;
     vertexMap_t _vertices;
-    size_t _heights_buffer_offset;
+    uint32_t _heights_buffer_offset;
 };
 

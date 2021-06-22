@@ -37,7 +37,7 @@ private:
         }
     }
 
-    void generateHeightsFlat(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
+    void generateHeightsFlat(std::vector<std::vector<float>>& heights, const glm::vec2&, float) {
         for (auto& row : heights) {
             for (auto& elem : row) {
                 elem = 0.0f;

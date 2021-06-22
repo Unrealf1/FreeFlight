@@ -18,7 +18,7 @@ class Terrain: public DrawableUnit, public PlayerDependable  {
     };
 
 public:
-    explicit Terrain(std::size_t points_in_chunk, float chunk_scale, float view_distance)
+    explicit Terrain(uint32_t points_in_chunk, float chunk_scale, float view_distance)
     : _points_in_chunk(points_in_chunk), _chunk_length(chunk_scale), _view_distance(view_distance) {}
     virtual ~Terrain() = default;
 
@@ -43,7 +43,7 @@ private:
     static constexpr std::size_t heights_buffer_size = max_points_in_chunk * _active_chunk_limit;
 
     // number of vertices in one side of a chunk
-    const std::size_t _points_in_chunk;
+    const uint32_t _points_in_chunk;
     GLuint _heights_ssbo;
     float* _heights;
     

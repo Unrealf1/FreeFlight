@@ -34,14 +34,23 @@ public:
         // create vbo for coords
         glGenBuffers(1, &_go.vbo_coords);
         glBindBuffer(GL_ARRAY_BUFFER, _go.vbo_coords);
-        glBufferData(GL_ARRAY_BUFFER, coords.size() * sizeof(float), coords.data(), GL_STATIC_DRAW);
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(coords.size() * sizeof(float)), 
+            coords.data(),
+            GL_STATIC_DRAW);
         // enable vbo for coords
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
         // create vbo for norms
         glGenBuffers(1, &_go.vbo_norms);
         glBindBuffer(GL_ARRAY_BUFFER, _go.vbo_norms);
-        glBufferData(GL_ARRAY_BUFFER, norms.size() * sizeof(float), norms.data(), GL_STATIC_DRAW);
+        glBufferData(
+            GL_ARRAY_BUFFER, 
+            static_cast<GLsizeiptr>(norms.size() * sizeof(float)),
+            norms.data(),
+            GL_STATIC_DRAW
+        );
         // enable vbo for norms
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
@@ -58,7 +67,12 @@ public:
         
         glGenBuffers(1, &go.vbo_texcoords);
         glBindBuffer(GL_ARRAY_BUFFER, go.vbo_texcoords);
-        glBufferData(GL_ARRAY_BUFFER, texture_coords.size() * sizeof(float), texture_coords.data(), GL_STATIC_DRAW);
+        glBufferData(
+            GL_ARRAY_BUFFER, 
+            static_cast<GLsizeiptr>(texture_coords.size() * sizeof(float)), 
+            texture_coords.data(), 
+            GL_STATIC_DRAW
+        );
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
 
@@ -75,7 +89,7 @@ public:
         if (!image) {
             spdlog::error("SOIL loading error: {}", SOIL_last_result());
         }
-        spdlog::error("created texture with id {}, w={}, h={}", texture, width, height);
+        spdlog::debug("From file {}, created texture with id {}, w={}, h={}", texture_file_path, texture, width, height);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
         glGenerateMipmap(GL_TEXTURE_2D);
         SOIL_free_image_data(image);

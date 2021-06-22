@@ -12,7 +12,7 @@
 
 #include <iostream>
 
-void OrbitCameraMover::handleKey(GLFWwindow* window, int key, int scancode, int action, int mods)
+void OrbitCameraMover::handleKey(GLFWwindow*, int, int, int, int)
 {
 
 }
@@ -39,7 +39,7 @@ void OrbitCameraMover::handleMouseMove(GLFWwindow* window, double xpos, double y
     _oldYPos = ypos;
 }
 
-void OrbitCameraMover::handleScroll(GLFWwindow* window, double xoffset, double yoffset)
+void OrbitCameraMover::handleScroll(GLFWwindow*, double, double yoffset)
 {
     _r += _r * yoffset * 0.05;
 }
@@ -78,7 +78,11 @@ void OrbitCameraMover::update(GLFWwindow* window, double dt)
     //-----------------------------------------
 
     //Вычисляем положение виртуальной камеры в мировой системе координат по формуле сферических координат
-    glm::vec3 pos = glm::vec3(glm::cos(_phiAng) * glm::cos(_thetaAng), glm::sin(_phiAng) * glm::cos(_thetaAng), glm::sin(_thetaAng) + 0.5f) * (float)_r;
+    glm::vec3 pos = glm::vec3(
+        glm::cos(_phiAng) * glm::cos(_thetaAng), 
+        glm::sin(_phiAng) * glm::cos(_thetaAng), 
+        glm::sin(_thetaAng) + 0.5
+    ) * static_cast<float>(_r);
 
     //Обновляем матрицу вида
     _camera.viewMatrix = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -89,21 +93,23 @@ void OrbitCameraMover::update(GLFWwindow* window, double dt)
     glfwGetFramebufferSize(window, &width, &height);
 
     //Обновляем матрицу проекции на случай, если размеры окна изменились
-    _camera.projMatrix = glm::perspective(glm::radians(45.0f), (float)width / height, _near, _far);
+    _camera.projMatrix = glm::perspective(
+        glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height), _near, _far
+    );
 }
 
 //=============================================
 
 FreeCameraMover::FreeCameraMover(float speed = 5.0f) :
-speed(speed),
 CameraMover(),
+speed(speed),
 _pos(5.0f, 0.0f, 2.5f)
 {       
     //Нам нужно как-нибудь посчитать начальную ориентацию камеры
     _rot = glm::toQuat(glm::lookAt(_pos, glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f)));
 }
 
-void FreeCameraMover::handleKey(GLFWwindow* window, int key, int scancode, int action, int mods)
+void FreeCameraMover::handleKey(GLFWwindow*, int, int, int, int)
 {
 
 }
@@ -129,7 +135,7 @@ void FreeCameraMover::handleMouseMove(GLFWwindow* window, double xpos, double yp
     _oldYPos = ypos;
 }
 
-void FreeCameraMover::handleScroll(GLFWwindow* window, double xoffset, double yoffset)
+void FreeCameraMover::handleScroll(GLFWwindow*, double, double)
 {
 }
 
@@ -184,5 +190,7 @@ void FreeCameraMover::update(GLFWwindow* window, double dt) {
     glfwGetFramebufferSize(window, &width, &height);
 
     //Обновляем матрицу проекции на случай, если размеры окна изменились
-    _camera.projMatrix = glm::perspective(glm::radians(45.0f), (float)width / height, _near, _far);
+    _camera.projMatrix = glm::perspective(
+        glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height), _near, _far
+    );
 }
