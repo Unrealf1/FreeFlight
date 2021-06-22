@@ -26,9 +26,12 @@ public:
     void init() override;
     void playerUpdate(const PlayerInfo&) override;
 
+    // const means, that this will __not__ create new chunks.
+    float getHeightAt(const glm::vec2& coords) const;
+
     using chunkContainer_t = std::deque<TerrainChunk>;
     using chunkIt_t = chunkContainer_t::iterator;
-    using constChunkIt_t = chunkContainer_t::iterator;
+    using constChunkIt_t = chunkContainer_t::const_iterator;
 
 private:
     void initGraphics();
@@ -55,7 +58,7 @@ private:
 
     std::unique_ptr<BiomeManager> _biomeManager = std::make_unique<BiomeManager>();
 
-    constChunkIt_t findChunkCloseTo(const glm::vec2& position, chunkContainer_t& container);
+    constChunkIt_t findChunkCloseTo(const glm::vec2& position, const chunkContainer_t& container) const;
     float get_closest_chunk_center(float a);
     glm::vec2 get_closest_possible_chunk_center(const glm::vec2& position);
     TerrainChunk generateChunkAt(const glm::vec2& position);

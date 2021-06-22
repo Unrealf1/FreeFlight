@@ -173,11 +173,11 @@ void Terrain::init() {
 
 Terrain::constChunkIt_t Terrain::findChunkCloseTo(
     const glm::vec2& position, 
-    chunkContainer_t& container
-) {
+    const chunkContainer_t& container
+) const {
     return std::find_if(
-        container.begin(), 
-        container.end(), 
+        container.cbegin(), 
+        container.cend(), 
         [&position, this](const TerrainChunk& c) { 
             return glm::length(c._center_location - position) < _chunk_length / 1.5f;
         }
@@ -318,4 +318,33 @@ void Terrain::updateHeights() {
     }
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, heights_buffer_size, _heights);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+float Terrain::getHeightAt(const glm::vec2& coords) const {
+    auto chunk = findChunkCloseTo(coords, _active_chunks);
+    spdlog::error("for chunk at pos {}/{} for query at {}/{}", chunk->_center_location.x, chunk->_center_location.y, coords.x, coords.y);
+    auto find_height_in_chunk = [this](const TerrainChunk& c, const glm::vec2& pos) {
+        float half_len = _chunk_length / 2.0f;
+        glm::vec2 near_left = c._center_location - glm::vec2(half_len, half_len);
+        glm::vec2 indices = pos - near_left;
+        auto x_i = std::llround(indices.x / _chunk_length * static_cast<float>(c._vertices.size()));
+        auto y_i = std::llround (indices.y / _chunk_length * static_cast<float>(c._vertices.size())); 
+        x_i = std::max(x_i, 0ll);
+        y_i = std::max(y_i, 0ll);
+        spdlog::error("diff_x is {}, len is {}", indices.x, _chunk_length);
+        spdlog::error("indices: {} {}, while size is {}", x_i, y_i, c._vertices.size());
+        return c._vertices[x_i][y_i].height;
+    };
+
+    if (chunk != _active_chunks.end()) {
+        return find_height_in_chunk(*chunk, coords);
+    }
+
+    chunk = findChunkCloseTo(coords, _archived_chunks);
+
+    if (chunk != _archived_chunks.end()) {
+        return find_height_in_chunk(*chunk, coords);
+    }
+
+    return 0.0f;
 }

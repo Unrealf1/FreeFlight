@@ -108,6 +108,7 @@ protected:
     void initLogger() {
         _logger = spdlog::stdout_color_mt("application");
         _logger->set_level(_params.log_level);
+        spdlog::set_level(_params.log_level);
         if (!_params.log_location.empty()) {
             auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> (
                 _params.log_location, 1024*1024, 5, true

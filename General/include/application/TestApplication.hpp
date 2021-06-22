@@ -51,6 +51,8 @@ protected:
     std::vector<std::shared_ptr<Updatable>> _updatable;
     std::vector<std::shared_ptr<PlayerDependable>> _player_dependable;
 
+    std::shared_ptr<Terrain> _terrain;
+
     frame_clock::time_point _last_frame_time;
     int64_t _fps = 0; // current
     int64_t _max_fps;
@@ -83,6 +85,7 @@ protected:
             //ImGui::Text("FPS: %i", _fps);
             auto pos = _cameraMover->getPos();
             ImGui::Text("Coordinates(x, y, z): %.1hf, %.1hf, %.1hf", pos.x, pos.y, pos.z);
+            ImGui::Text("Latitude: %.1hf", pos.z - _terrain->getHeightAt({pos.x, pos.y}));
 
             if (ImGui::Button("Speed+")) {
                 auto old_spd = _cameraMover->getSpeed();
@@ -104,9 +107,9 @@ protected:
         _drawable.push_back(std::make_shared<Square>(4.0f));
 
         _logger->debug("creating terrain...");
-        auto terrain = std::make_shared<Terrain>(_params.points_in_chunk, _params.chunk_length, _params.view_distance);
-        _drawable.push_back(terrain);
-        _player_dependable.push_back(terrain);
+        _terrain = std::make_shared<Terrain>(_params.points_in_chunk, _params.chunk_length, _params.view_distance);
+        _drawable.push_back(_terrain);
+        _player_dependable.push_back(_terrain);
 
         for (auto& item : _drawable) {
             item->init();
