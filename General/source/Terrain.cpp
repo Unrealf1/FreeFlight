@@ -329,8 +329,8 @@ float Terrain::getHeightAt(const glm::vec2& coords) const {
         glm::vec2 indices = pos - near_left;
         auto x_i = std::llround(indices.x / _chunk_length * static_cast<float>(c._vertices.size()));
         auto y_i = std::llround (indices.y / _chunk_length * static_cast<float>(c._vertices.size())); 
-        x_i = std::max(x_i, 0ll);
-        y_i = std::max(y_i, 0ll);
+        x_i = std::min(std::max(x_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
+        y_i = std::min(std::max(y_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
         spdlog::error("diff_x is {}, len is {}", indices.x, _chunk_length);
         spdlog::error("indices: {} {}, while size is {}", x_i, y_i, c._vertices.size());
         return c._vertices[x_i][y_i].height;
