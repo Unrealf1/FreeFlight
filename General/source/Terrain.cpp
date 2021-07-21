@@ -66,8 +66,10 @@ void Terrain::draw(const RenderInfo& info) {
     // glShaderStorageBlockBinding(program, block_index, ssbo_binding_point_index);
 
     const auto num_chunks = std::min(instance_render_limit, datum.size()); 
+
     for(size_t i = 0; i < num_chunks; i++) {
         std::string index = std::to_string(i);
+        //TODO: rewrite this without loop
         glUniformMatrix4fv(
             glGetUniformLocation(program, ("models[" + index + "]").c_str()),
             1,
@@ -78,8 +80,10 @@ void Terrain::draw(const RenderInfo& info) {
             glGetUniformLocation(program, ("offsets[" + index + "]").c_str()),
             datum[i].heights_buffer_offset
         );
-        
-    } 
+    }
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _heights_ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, _textures_ssbo);
+
     glDrawArraysInstanced(GL_TRIANGLES, 0, _graphics.vertex_cnt, static_cast<GLsizei>(num_chunks));
     glBindVertexArray(0);
     
@@ -144,7 +148,7 @@ void Terrain::init() {
 
     auto chunk_base_model = createChunkModel();
 
-    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/grass3.jpg");
+    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/ground1.jpg");
 
     spdlog::info("graphics has {} vertices", _graphics.vertex_cnt);
 
@@ -152,10 +156,10 @@ void Terrain::init() {
         return;
     }
 
-    auto text = extractShaderText("resources/shaders/Terrain.vert");
+    auto text = extractShaderText("resources/shaders/Bindless.vert");
     auto vertex_shader = createVertexShader(text.c_str());
 
-    text = extractShaderText("resources/shaders/Terrain.frag");
+    text = extractShaderText("resources/shaders/Bindless.frag");
     auto frag_shader = createFragmentShader(text.c_str());
 
     auto prog = createProgram(vertex_shader, frag_shader);
@@ -167,8 +171,29 @@ void Terrain::init() {
     spdlog::info("ssbo is {}", _heights_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
     glBufferData(GL_SHADER_STORAGE_BUFFER, heights_buffer_size * sizeof(float), _heights, GL_DYNAMIC_DRAW/*GLenum usage*/);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _heights_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    _texture_handlers = new GLuint64[heights_buffer_size];
+    glGenBuffers(1, &_textures_ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _textures_ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, heights_buffer_size * sizeof(GLuint64), _texture_handlers, GL_DYNAMIC_DRAW/*GLenum usage*/);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    glGenSamplers(1, &_sampler);
+    // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+    glBindSampler(0, _sampler);
+    auto tex1 = GraphicsInitializer::initTexture("resources/textures/ground1.jpg");
+    auto tex2 = GraphicsInitializer::initTexture("resources/textures/grass3.jpg");
+    _tex1 = glGetTextureSamplerHandleARB(tex1, _sampler);
+    _tex2 = glGetTextureSamplerHandleARB(tex2, _sampler);
+    spdlog::error("handlers: 1:{}; 2:{}\ntextures: 1:{}; 2:{}", _tex1, _tex2, tex1, tex2);
+
+    glMakeTextureHandleResidentARB(_tex1);
+    glMakeTextureHandleResidentARB(_tex2);
 }
 
 Terrain::constChunkIt_t Terrain::findChunkCloseTo(
@@ -227,7 +252,7 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
         heightmap.begin(), 
         heightmap.end(), 
         std::back_inserter(result._vertices), 
-        [](const std::vector<float>& vf) {
+        [this](const std::vector<float>& vf) {
             std::vector<ChunkVertex> res;
             res.reserve(vf.size());
 
@@ -235,13 +260,13 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
                 vf.begin(), 
                 vf.end(), 
                 std::back_inserter(res), 
-                [](float f){ return ChunkVertex{f}; }
+                [this](float f){ return f > 0.0f ? ChunkVertex{f, _tex1} : ChunkVertex{f, _tex2}; }
             );
 
             return res;
         }
     );
-
+    spdlog::info("corner vertex handler is {}", result._vertices[0][0].texture_handler);
     return result;
 
 }
@@ -303,20 +328,25 @@ void Terrain::playerUpdate(const PlayerInfo& player) {
 
 void Terrain::updateHeights() {
     //loading heights data to the gpu
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
     const auto chunk_data_size = _points_in_chunk * _points_in_chunk;
-
+    
     for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
         auto& chunk = _active_chunks[c_i];
         auto chunk_offset = static_cast<uint32_t>(c_i) * chunk_data_size;
         for (size_t i = 0; i < chunk._vertices.size(); ++i) {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
                 _heights[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].height;
+                _texture_handlers[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].texture_handler;
                 chunk._heights_buffer_offset = chunk_offset;
             }
         }
     }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, heights_buffer_size, _heights);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _textures_ssbo);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, heights_buffer_size, _texture_handlers);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
@@ -330,7 +360,7 @@ float Terrain::getHeightAt(const glm::vec2& coords) const {
         auto y_i = std::llround (indices.y / _chunk_length * static_cast<float>(c._vertices.size())); 
         x_i = std::min(std::max(x_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
         y_i = std::min(std::max(y_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
-        y_i = c._vertices.size() - y_i;
+        y_i = c._vertices.size() - y_i - 1;
         return c._vertices[y_i][x_i].height;
     };
 

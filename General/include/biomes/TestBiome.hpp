@@ -9,7 +9,7 @@
 class TestBiome: public Biome {
 public:
     void generateHeights(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
-        generateHeightsLinear(heights, far_left, step);
+        generateHeightsNoise(heights, far_left, step);
     }
 
     GLuint getTexture() {

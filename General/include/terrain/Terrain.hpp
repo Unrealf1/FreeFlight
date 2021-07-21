@@ -44,11 +44,18 @@ private:
     static constexpr std::size_t chunk_size_limit = 2000;
     static constexpr std::size_t max_points_in_chunk = chunk_size_limit * chunk_size_limit;
     static constexpr std::size_t heights_buffer_size = max_points_in_chunk * _active_chunk_limit;
+    GLuint _sampler;
+    GLuint64 _tex1;
+    GLuint64 _tex2;
 
     // number of vertices in one side of a chunk
     const uint32_t _points_in_chunk;
+    
     GLuint _heights_ssbo;
     float* _heights;
+
+    GLuint _textures_ssbo;
+    GLuint64* _texture_handlers;
     
     // actual length of the chunk
     const float _chunk_length;
