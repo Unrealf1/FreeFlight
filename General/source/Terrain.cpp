@@ -322,7 +322,6 @@ void Terrain::updateHeights() {
 
 float Terrain::getHeightAt(const glm::vec2& coords) const {
     auto chunk = findChunkCloseTo(coords, _active_chunks);
-    spdlog::error("for chunk at pos {}/{} for query at {}/{}", chunk->_center_location.x, chunk->_center_location.y, coords.x, coords.y);
     auto find_height_in_chunk = [this](const TerrainChunk& c, const glm::vec2& pos) {
         float half_len = _chunk_length / 2.0f;
         glm::vec2 near_left = c._center_location - glm::vec2(half_len, half_len);
@@ -332,12 +331,7 @@ float Terrain::getHeightAt(const glm::vec2& coords) const {
         x_i = std::min(std::max(x_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
         y_i = std::min(std::max(y_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
         y_i = c._vertices.size() - y_i;
-        spdlog::error("diff_x is {}, len is {}, ratio is {}", indices.x, _chunk_length, indices.x / _chunk_length);
-        spdlog::error("indices: {} {}, while size is {}", x_i, y_i, c._vertices.size());
-        spdlog::error("height is {}", c._vertices[x_i][y_i].height);
-        auto cc = const_cast<TerrainChunk&>(c);
-        cc._vertices[x_i][y_i].height += 1.0f;
-        return c._vertices[x_i][y_i].height;
+        return c._vertices[y_i][x_i].height;
     };
 
     if (chunk != _active_chunks.end()) {
@@ -349,6 +343,6 @@ float Terrain::getHeightAt(const glm::vec2& coords) const {
     if (chunk != _archived_chunks.end()) {
         return find_height_in_chunk(*chunk, coords);
     }
-
+    spdlog::warn("height of unloaded chunk was requested. Returning zero");
     return 0.0f;
 }

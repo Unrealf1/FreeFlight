@@ -47,7 +47,7 @@ private:
 
     void generateHeightsLinear(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
         float y = far_left.y;
-        float alpha = 0.01f;
+        float alpha = 0.1f;
         for (auto& row : heights) {
             float x = far_left.x;
             for (auto& elem : row) {
