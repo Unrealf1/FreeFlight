@@ -17,6 +17,8 @@ layout(location = 2) in vec2 texCoord;
 out vec3 colour;
 out vec2 TexCoord;
 out flat sampler2D ourTexture;
+out flat sampler2D nearTexture;
+out flat float mix_textures;
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -55,6 +57,17 @@ void main() {
     uint data_index = offset + height_index;
     float height = terrain_heights_data[data_index];
     ourTexture = sampler2D(textures_data[data_index]);
+    uint near_index = 0;
+    if (data_index > 0) {
+        near_index = data_index - 1;
+    }
+    ourTexture = sampler2D(textures_data[data_index]);
+    nearTexture = sampler2D(textures_data[near_index]);
+
+    mix_textures = 0.0;
+    if (textures_data[data_index] != textures_data[near_index]) {
+        mix_textures = 1.0;
+    }
 
     true_height = height;
     vec3 final_pos = vec3(vertexPosition.xy, height);
