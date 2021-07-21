@@ -179,7 +179,7 @@ Terrain::constChunkIt_t Terrain::findChunkCloseTo(
         container.cbegin(), 
         container.cend(), 
         [&position, this](const TerrainChunk& c) { 
-            return glm::length(c._center_location - position) < _chunk_length / 1.5f;
+            return glm::abs(c._center_location.x - position.x) <= _chunk_length/2.0f && glm::abs(c._center_location.y - position.y) <= _chunk_length/2.0f;
         }
     );
 }
@@ -331,8 +331,12 @@ float Terrain::getHeightAt(const glm::vec2& coords) const {
         auto y_i = std::llround (indices.y / _chunk_length * static_cast<float>(c._vertices.size())); 
         x_i = std::min(std::max(x_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
         y_i = std::min(std::max(y_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
-        spdlog::error("diff_x is {}, len is {}", indices.x, _chunk_length);
+        y_i = c._vertices.size() - y_i;
+        spdlog::error("diff_x is {}, len is {}, ratio is {}", indices.x, _chunk_length, indices.x / _chunk_length);
         spdlog::error("indices: {} {}, while size is {}", x_i, y_i, c._vertices.size());
+        spdlog::error("height is {}", c._vertices[x_i][y_i].height);
+        auto cc = const_cast<TerrainChunk&>(c);
+        cc._vertices[x_i][y_i].height += 1.0f;
         return c._vertices[x_i][y_i].height;
     };
 

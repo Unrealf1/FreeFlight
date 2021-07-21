@@ -86,6 +86,7 @@ protected:
             auto pos = _cameraMover->getPos();
             ImGui::Text("Coordinates(x, y, z): %.1hf, %.1hf, %.1hf", pos.x, pos.y, pos.z);
             ImGui::Text("Latitude: %.1hf", pos.z - _terrain->getHeightAt({pos.x, pos.y}));
+            ImGui::Text("Height: %.hf", _terrain->getHeightAt({pos.x, pos.y}));
 
             if (ImGui::Button("Speed+")) {
                 auto old_spd = _cameraMover->getSpeed();
