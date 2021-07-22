@@ -99,7 +99,7 @@ protected:
         onUpdate(info);
     }
 
-    virtual void onUpdate(const UpdateInfo&) {}
+    virtual void onUpdate(UpdateInfo&) {}
 
     virtual void onRun() { }
 

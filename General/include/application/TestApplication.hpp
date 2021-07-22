@@ -117,8 +117,9 @@ protected:
         }
     }
 
-    virtual void onUpdate(const UpdateInfo& info) override {
-        _cameraMover->update(info.window, info.dt);
+    virtual void onUpdate(UpdateInfo& info) override {
+        info.terrain = _terrain;
+        _cameraMover->update(info);
 
         for (auto& item : _updatable) {
             item->update(info);

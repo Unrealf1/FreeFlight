@@ -4,6 +4,7 @@
  */
 
 #include "camera/Camera.hpp"
+#include "terrain/Terrain.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
@@ -44,8 +45,10 @@ void OrbitCameraMover::handleScroll(GLFWwindow*, double, double yoffset)
     _r += _r * yoffset * 0.05;
 }
 
-void OrbitCameraMover::update(GLFWwindow* window, double dt)
+void OrbitCameraMover::update(const UpdateInfo& info)
 {
+    GLFWwindow* window = info.window;
+    double dt = info.dt;
     double speed = 1.0;
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
@@ -139,7 +142,10 @@ void FreeCameraMover::handleScroll(GLFWwindow*, double, double)
 {
 }
 
-void FreeCameraMover::update(GLFWwindow* window, double dt) {
+void FreeCameraMover::update(const UpdateInfo& info) {
+    GLFWwindow* window = info.window;
+    double dt = info.dt;
+
     float actual_speed = speed;
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
         actual_speed *= 2;
@@ -177,6 +183,10 @@ void FreeCameraMover::update(GLFWwindow* window, double dt) {
     {
         _pos += upDir * actual_speed * static_cast<float>(dt);
     }
+
+    float height_offset = 1.5f;
+    auto terrain_height = info.terrain->getHeightAt(glm::vec2(_pos));
+    _pos.z = std::max(terrain_height + height_offset, _pos.z);
 
 
     //-----------------------------------------

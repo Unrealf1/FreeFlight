@@ -5,6 +5,7 @@
 #include "render/RenderDefs.hpp"
 #include "render/GraphicsInitializer.hpp"
 #include "render/Program.hpp"
+#include "utility/ThreadPool.hpp"
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -102,7 +103,7 @@ TexturedModel<> Terrain::createChunkModel() {
 
     float cur_row = 0.5f;
     float tex_row = 1.0f;
-    float tex_repeat_per_chunk = _chunk_length / 5.0f;
+    float tex_repeat_per_chunk = _chunk_length / 20.0f;
     float tex_step = step * tex_repeat_per_chunk;
     for (size_t i = 0; i < _points_in_chunk - 1; ++i) { // from far to near
         float cur_column = -0.5f;
@@ -231,11 +232,9 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
 }
 
 Terrain::constChunkIt_t Terrain::getChunkCloseTo(const glm::vec2& position) {
-    // spdlog::info("searching for the first chunk");
     auto chunk_pos = get_closest_possible_chunk_center(position);
     auto found = findChunkCloseTo(chunk_pos, _active_chunks);
     if (found != _active_chunks.end()) {
-        // spdlog::info("the chunk is active already!");
         return found;
     }
     spdlog::info("chunk is not active...");
@@ -244,6 +243,7 @@ Terrain::constChunkIt_t Terrain::getChunkCloseTo(const glm::vec2& position) {
     if (found != _archived_chunks.end()) {
         spdlog::info("the chunk was archived");
         _active_chunks.push_back(*found);
+        _active_chunks_updated = true;
         _archived_chunks.erase(found);
         return found;
     }
@@ -251,8 +251,8 @@ Terrain::constChunkIt_t Terrain::getChunkCloseTo(const glm::vec2& position) {
     spdlog::debug("Generating new chunk at {} {}", chunk_pos.x, chunk_pos.y);
     auto new_chunk = generateChunkAt(chunk_pos);
     _active_chunks.push_back(new_chunk);
-    updateHeights();
-    
+    _active_chunks_updated = true;
+
     return (--_active_chunks.end());
 }
 
@@ -260,6 +260,7 @@ void Terrain::check_chunks_containers() {
     //spdlog::debug("active chunks: {}. archived chunks: {}", _active_chunks.size(), _archived_chunks.size());
     while (_active_chunks.size() > _active_chunk_limit) {
         _active_chunks.pop_front();
+        _active_chunks_updated = true;
     }
 
     while (_archived_chunks.size() > _archived_chunks_limit) {
@@ -282,24 +283,33 @@ void Terrain::playerUpdate(const PlayerInfo& player) {
             (void)getChunkCloseTo({cur_x, cur_y});
         }
     }
+
     check_chunks_containers();
+    if (_active_chunks_updated) {
+        updateBuffers();
+        flushBuffers();
+        _active_chunks_updated = false;
+    }
 }
 
-void Terrain::updateHeights() {
-    //loading heights data to the gpu
+void Terrain::updateBuffers() {
     const auto chunk_data_size = _points_in_chunk * _points_in_chunk;
     
     for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
         auto& chunk = _active_chunks[c_i];
         auto chunk_offset = static_cast<uint32_t>(c_i) * chunk_data_size;
+        chunk._heights_buffer_offset = chunk_offset;
         for (size_t i = 0; i < chunk._vertices.size(); ++i) {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
                 _heights[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].height;
                 _texture_handlers[chunk_offset + i * _points_in_chunk + j] = chunk._vertices[i][j].texture_handler;
-                chunk._heights_buffer_offset = chunk_offset;
             }
         }
     }
+}
+    
+
+void Terrain::flushBuffers() {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _heights_ssbo);
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, heights_buffer_size, _heights);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -311,15 +321,16 @@ void Terrain::updateHeights() {
 
 float Terrain::getHeightAt(const glm::vec2& coords) const {
     auto chunk = findChunkCloseTo(coords, _active_chunks);
+    //TODO: improve height calculation and interpolate between points
     auto find_height_in_chunk = [this](const TerrainChunk& c, const glm::vec2& pos) {
         float half_len = _chunk_length / 2.0f;
         glm::vec2 near_left = c._center_location - glm::vec2(half_len, half_len);
         glm::vec2 indices = pos - near_left;
-        auto x_i = std::llround(indices.x / _chunk_length * static_cast<float>(c._vertices.size()));
-        auto y_i = std::llround (indices.y / _chunk_length * static_cast<float>(c._vertices.size())); 
-        x_i = std::min(std::max(x_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
-        y_i = std::min(std::max(y_i, 0ll), static_cast<long long>(c._vertices.size() - 1));
-        y_i = c._vertices.size() - y_i - 1;
+        auto x_i = static_cast<uint64_t>(std::llround(indices.x / _chunk_length * static_cast<float>(c._vertices.size())));
+        auto y_i = static_cast<uint64_t>(std::llround (indices.y / _chunk_length * static_cast<float>(c._vertices.size()))); 
+        x_i = std::min(std::max(x_i, 0ul), c._vertices.size() - 1ul);
+        y_i = std::min(std::max(y_i, 0ul), c._vertices.size() - 1ul);
+        y_i = c._vertices.size() - y_i - 1ul;
         return c._vertices[y_i][x_i].height;
     };
 

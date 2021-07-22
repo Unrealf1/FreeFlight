@@ -16,6 +16,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "render/Updatable.hpp"
+
 #include <memory>
 
 struct CameraInfo
@@ -27,7 +29,7 @@ struct CameraInfo
 /**
 Класс для управления виртуальной камерой
 */
-class CameraMover {
+class CameraMover : public Updatable {
 public:
     CameraMover() {}
     virtual ~CameraMover() {}
@@ -56,7 +58,7 @@ public:
     /**
     Обновляет положение виртуальной камеры
     */
-    virtual void update(GLFWwindow* window, double dt) = 0;
+    virtual void update(const UpdateInfo& info) = 0;
 
     virtual void setNearFarPlanes(float near, float far) { _near = near; _far = far; }
 
@@ -81,7 +83,7 @@ public:
     void handleKey(GLFWwindow* window, int key, int scancode, int action, int mods) override;
     void handleMouseMove(GLFWwindow* window, double xpos, double ypos) override;
     void handleScroll(GLFWwindow* window, double xoffset, double yoffset) override;
-    void update(GLFWwindow* window, double dt) override;
+    void update(const UpdateInfo& info) override;
 
 	void showOrientationParametersImgui() override;
 	void setOrientationParameters(double r, double phi, double theta) { _r = r; _phiAng = phi; _thetaAng = theta; }
@@ -114,7 +116,7 @@ public:
     void handleKey(GLFWwindow* window, int key, int scancode, int action, int mods) override;
     void handleMouseMove(GLFWwindow* window, double xpos, double ypos) override;
     void handleScroll(GLFWwindow* window, double xoffset, double yoffset) override;
-    void update(GLFWwindow* window, double dt) override;
+    void update(const UpdateInfo& info) override;
     glm::vec3 getPos() override {
         return _pos;
     }

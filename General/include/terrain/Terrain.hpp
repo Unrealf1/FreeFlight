@@ -20,7 +20,10 @@ class Terrain: public DrawableUnit, public PlayerDependable  {
 public:
     explicit Terrain(uint32_t points_in_chunk, float chunk_scale, float view_distance)
     : _points_in_chunk(points_in_chunk), _chunk_length(chunk_scale), _view_distance(view_distance) {}
-    virtual ~Terrain() = default;
+    virtual ~Terrain() {
+        delete[] _heights;
+        delete[] _texture_handlers;
+    }
 
     void draw(const RenderInfo&) override;
     void init() override;
@@ -53,6 +56,8 @@ private:
 
     GLuint _textures_ssbo;
     GLuint64* _texture_handlers;
+
+    bool _active_chunks_updated = false; 
     
     // actual length of the chunk
     const float _chunk_length;
@@ -71,6 +76,7 @@ private:
 
     TexturedModel<> createChunkModel();
 
-    void updateHeights();
+    void updateBuffers();
+    void flushBuffers();
 
 };
