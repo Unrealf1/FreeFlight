@@ -102,7 +102,7 @@ TexturedModel<> Terrain::createChunkModel() {
 
     float cur_row = 0.5f;
     float tex_row = 1.0f;
-    float tex_repeat_per_chunk = _chunk_length / 10.0f;
+    float tex_repeat_per_chunk = _chunk_length / 5.0f;
     float tex_step = step * tex_repeat_per_chunk;
     for (size_t i = 0; i < _points_in_chunk - 1; ++i) { // from far to near
         float cur_column = -0.5f;
@@ -178,22 +178,6 @@ void Terrain::init() {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, _textures_ssbo);
     glBufferData(GL_SHADER_STORAGE_BUFFER, heights_buffer_size * sizeof(GLuint64), _texture_handlers, GL_DYNAMIC_DRAW/*GLenum usage*/);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-    glGenSamplers(1, &_sampler);
-    // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-    glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-
-    glBindSampler(0, _sampler);
-    auto tex1 = GraphicsInitializer::initTexture("resources/textures/ground1.jpg");
-    auto tex2 = GraphicsInitializer::initTexture("resources/textures/grass3.jpg");
-    _tex1 = glGetTextureSamplerHandleARB(tex1, _sampler);
-    _tex2 = glGetTextureSamplerHandleARB(tex2, _sampler);
-    spdlog::error("handlers: 1:{}; 2:{}\ntextures: 1:{}; 2:{}", _tex1, _tex2, tex1, tex2);
-
-    glMakeTextureHandleResidentARB(_tex1);
-    glMakeTextureHandleResidentARB(_tex2);
 }
 
 Terrain::constChunkIt_t Terrain::findChunkCloseTo(
@@ -229,43 +213,18 @@ glm::vec2 Terrain::get_closest_possible_chunk_center(const glm::vec2& position) 
 }
 
 TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
-    TerrainChunk result;
-    result._center_location = position;
-    std::vector<std::vector<float>> heightmap;
     if (_points_in_chunk > chunk_size_limit) {
         spdlog::critical("too much points in one chunk");
         exit(1);
     }
-    heightmap.resize(_points_in_chunk);
-    for (auto& row : heightmap) {
-        row.resize(_points_in_chunk);
-    }
 
     auto far_left = position + glm::vec2(-_chunk_length/2.0f, _chunk_length/2.0f);
-    spdlog::info("requesting heights from biome manager");
+    spdlog::info("requesting chunk from biome manager");
     float num_steps = static_cast<float>(_points_in_chunk - 1);
     float step = 1.0f / num_steps;
-    _biomeManager->generateHeights(heightmap, far_left, step * _chunk_length);
-    spdlog::info("transforming heightmap into chunk");
+    TerrainChunk result = _biomeManager->generateChunk(_points_in_chunk, far_left, step * _chunk_length);
+    result._center_location = position;
 
-    std::transform(
-        heightmap.begin(), 
-        heightmap.end(), 
-        std::back_inserter(result._vertices), 
-        [this](const std::vector<float>& vf) {
-            std::vector<ChunkVertex> res;
-            res.reserve(vf.size());
-
-            std::transform(
-                vf.begin(), 
-                vf.end(), 
-                std::back_inserter(res), 
-                [this](float f){ return f > 0.0f ? ChunkVertex{f, _tex1} : ChunkVertex{f, _tex2}; }
-            );
-
-            return res;
-        }
-    );
     spdlog::info("corner vertex handler is {}", result._vertices[0][0].texture_handler);
     return result;
 

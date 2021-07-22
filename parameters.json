@@ -1,5 +1,5 @@
 {
-	"far_plane" : 2000.0,
+	"far_plane" : 4000.0,
 	"log_level" : 2,
 	"log_location" : "log/log.txt",
 	"near_plane" : 0.1,

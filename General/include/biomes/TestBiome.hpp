@@ -2,14 +2,38 @@
 
 #include "biomes/Biome.hpp"
 #include "biomes/simplexnoise1234.h"
+#include "render/TextureContainer.hpp"
+
 #include <spdlog/spdlog.h>
 #include <fmt/core.h>
 
 
 class TestBiome: public Biome {
 public:
-    void generateHeights(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
+    TestBiome(const char* texname = "resources/textures/grass3.jpg") {
+        glGenSamplers(1, &_sampler);
+        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+        _texture = TextureContainer::getTexture(texname);
+        _texHandle = TexHandleContainer::createHandle(_texture, _sampler);
+        glMakeTextureHandleResidentARB(_texHandle);
+    }
+
+    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& far_left, float step) override {
+        std::vector<std::vector<float>> heights;
+        heights.resize(vertices.size());
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            heights[i].resize(vertices[i].size());
+        }
         generateHeightsNoise(heights, far_left, step);
+        
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t j = 0; j < vertices[i].size(); ++j) {
+                vertices[i][j].height = heights[i][j];
+                vertices[i][j].texture_handler = _texHandle;
+            }
+        }
     }
 
     GLuint getTexture() {
@@ -23,6 +47,11 @@ public:
         return "test_biome";
     }
 private:
+    GLuint _sampler;
+    GLuint _texture;
+    GLuint64 _texHandle;
+
+
     void generateHeightsNoise(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
         float y = far_left.y;
         for (auto& row : heights) {
