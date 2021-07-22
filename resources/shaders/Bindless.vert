@@ -17,6 +17,7 @@ layout(location = 2) in vec2 texCoord;
 out vec3 colour;
 out vec2 TexCoord;
 out flat sampler2D ourTexture;
+out flat sampler2D leftTexture;
 out flat sampler2D nearTexture;
 out flat float mix_textures;
 
@@ -27,6 +28,8 @@ uniform uint offsets[100];
 uniform uint chunk_size;
 
 out float true_height;
+out float proximity_flag;
+out flat float initial_flag;
 
 
 
@@ -55,13 +58,25 @@ void main() {
     uint offset = offsets[gl_InstanceID];
 
     uint data_index = offset + height_index;
+    if (data_index % 2 == 0) {
+        proximity_flag = 1.0;
+    } else {
+        proximity_flag = 0.0;
+    }
+    initial_flag = proximity_flag;
+
     float height = terrain_heights_data[data_index];
     ourTexture = sampler2D(textures_data[data_index]);
-    uint near_index = 0;
-    if (data_index > 0) {
-        near_index = data_index - 1;
+    uint left_index = data_index; // vertex to the left
+    uint near_index = data_index; // vertex closer to the screen(in initial coordinates)
+    if ((height_index % chunk_size) > 0) {
+        left_index = data_index - 1;
+    }
+    if ((height_index / chunk_size) > 0 ) {
+        near_index = data_index - chunk_size;
     }
     ourTexture = sampler2D(textures_data[data_index]);
+    leftTexture = sampler2D(textures_data[left_index]);
     nearTexture = sampler2D(textures_data[near_index]);
 
     mix_textures = 0.0;

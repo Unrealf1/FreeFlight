@@ -60,12 +60,6 @@ void Terrain::draw(const RenderInfo& info) {
         static_cast<GLuint>(_points_in_chunk)
     );
 
-    // GLuint block_index = 0;
-    // block_index = glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "terrain_heights");
-    // //spdlog::info("block index is {}", block_index);
-    // GLuint ssbo_binding_point_index = 1;
-    // glShaderStorageBlockBinding(program, block_index, ssbo_binding_point_index);
-
     const auto num_chunks = std::min(instance_render_limit, datum.size()); 
 
     for(size_t i = 0; i < num_chunks; i++) {
@@ -91,7 +85,7 @@ void Terrain::draw(const RenderInfo& info) {
 }
 
 TexturedModel<> Terrain::createChunkModel() {
-    float num_steps = static_cast<float>(_points_in_chunk - 1);
+    float num_steps = static_cast<float>(_points_in_chunk - 1); // -1 for one less edge than vertex
     float step = 1.0f / num_steps;
     spdlog::info("step is {}", step);
 
