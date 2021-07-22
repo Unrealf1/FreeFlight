@@ -1,3 +1,5 @@
+#pragma once
+
 // SimplexNoise1234
 // Copyright � 2003-2011, Stefan Gustavson
 //

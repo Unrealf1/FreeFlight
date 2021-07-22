@@ -3,7 +3,9 @@
 ### TODO:
 
 * Bindless textures ✓
-* Texture information in biome & chunk points
+* Texture information in biome & chunk points ✓
+* Lightning
+* Smooth heights and textures
 * Structures
   * changing terrain heights & textures
   * adding new vertices

@@ -1,5 +1,7 @@
 #include "biomes/BiomeManager.hpp"
 #include "biomes/TestBiome.hpp"
+#include "biomes/Hills.hpp"
+#include "biomes/Field.hpp"
 
 #include <spdlog/spdlog.h>
 #include <cmath>
@@ -25,8 +27,9 @@ TerrainChunk BiomeManager::generateChunk(uint32_t points_in_chunk, const glm::ve
     };
     size_t index = rand()%possible_textures.size();
 
-    auto biome = TestBiome(possible_textures[index].c_str());
-    biome.generateVertices(result._vertices, far_left, step);
+    //auto biome = TestBiome(possible_textures[index].c_str());
+    rand()%2 ? Hills().generateVertices(result._vertices, far_left, step) : Field().generateVertices(result._vertices, far_left, step);
+    
 
     return result;
 }
