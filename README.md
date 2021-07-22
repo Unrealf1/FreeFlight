@@ -5,7 +5,7 @@
 * Bindless textures ✓
 * Texture information in biome & chunk points ✓
 * Lightning
-* Smooth heights and textures
+* Smooth heights and textures [in progress...]
 * Structures
   * changing terrain heights & textures
   * adding new vertices
