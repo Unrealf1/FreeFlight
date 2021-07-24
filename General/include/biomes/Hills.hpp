@@ -24,10 +24,10 @@ public:
         for (size_t i = 0; i < vertices.size(); ++i) {
             float x = far_left.x;
             for (size_t j = 0; j < vertices[i].size(); ++j) {
-                float height = 5.0f;
-                height += SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 10.0f;
-                height += SimplexNoise1234::noise(0.003f * (x + 333.0f), 0.003f * (y + 54321.0f)) * 20.0f;
-                height += (std::sin(0.00005f * x) + std::cos(0.00005f * y) + 1.0f) * 5.0f;
+                float height = 30.0f;
+                height += SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 12.0f;
+                height += SimplexNoise1234::noise(0.008f * (x + 333.0f), 0.008f * (y + 54321.0f)) * 80.0f;
+                height += (std::sin(0.00005f * x) + std::cos(0.00005f * y) + 1.0f) * 6.0f;
 
                 vertices[i][j].height = height;
                 vertices[i][j].texture_handler = _texHandle;

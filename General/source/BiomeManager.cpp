@@ -41,24 +41,22 @@ TerrainChunk BiomeManager::generateChunk(uint32_t points_in_chunk, const glm::ve
         }
     }
 
-    // std::vector<std::string> possible_textures = {
-    //     "resources/textures/grass2.jpg", 
-    //     "resources/textures/grass3.jpg", 
-    //     "resources/textures/grass4.jpg", 
-    //     "resources/textures/grass5.jpg", 
-    //     "resources/textures/ground1.jpg",
-    //     "resources/textures/sand1.jpg", 
-    //     "resources/textures/sand2.jpg", 
-    //     "resources/textures/sand3.jpg", 
-    //     "resources/textures/sand4.jpg"
-    // };
-    // size_t index = rand()%possible_textures.size();
+    for (uint32_t i = 1; i < result._vertices.size(); ++i) {
+        for (uint32_t j = 1; j < result._vertices.size(); ++j) {
+            ChunkVertex& vertex = result._vertices[i][j];
 
-    // auto biome = TestBiome(possible_textures[index].c_str());
-    // generateVertices(result._vertices, far_left, step);
-
-    //rand()%2 ? Hills().generateVertices(result._vertices, far_left, step) : Field().generateVertices(result._vertices, far_left, step);
-    
+            if (result._vertices[i-1][j].texture_handler != vertex.texture_handler) {
+                vertex.secondary_texture_handler = result._vertices[i-1][j].texture_handler;
+                vertex.secondary_texture_weight = 1.0f;
+            } else if(result._vertices[i][j-1].texture_handler != vertex.texture_handler) {
+                vertex.secondary_texture_handler = result._vertices[i-1][j].texture_handler;
+                vertex.secondary_texture_weight = 1.0f;
+            } else {
+                vertex.secondary_texture_handler = vertex.texture_handler;
+                vertex.secondary_texture_weight = 0.0f;
+            }
+        }
+    }   
 
     return result;
 }

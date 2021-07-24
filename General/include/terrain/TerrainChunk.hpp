@@ -7,6 +7,8 @@
 struct ChunkVertex {
     float height;
     GLuint64 texture_handler;
+    GLuint64 secondary_texture_handler;
+    float secondary_texture_weight;
 };
 
 struct TerrainChunk {
@@ -15,6 +17,6 @@ struct TerrainChunk {
 
     glm::vec2 _center_location;
     vertexMap_t _vertices;
-    uint32_t _heights_buffer_offset;
+    uint32_t _ssbo_offset;
 };
 

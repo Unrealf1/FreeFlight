@@ -1,6 +1,10 @@
 #pragma once
 
-#include <glm/glm.h>
+#include <glm/glm.hpp>
+
+#define DIRECTIONAL_LIGHT = 0
+#define POINT_LIGHT = 1
+
 
 
 struct Light {
@@ -13,7 +17,7 @@ struct Light {
 };
 
 struct DirectionalLight: public Light {
-    glm::vec3 direction_to_source;
+    glm::vec3 direction;
 };
 
 struct PointLight: public Light {
