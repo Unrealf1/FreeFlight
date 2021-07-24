@@ -21,7 +21,7 @@ struct LightInfo
 uniform LightInfo light;
 
 const vec3 Ks = vec3(1.0, 1.0, 1.0); //Коэффициент бликового отражения
-const float shininess = 128.0;
+const float shininess = 1208.0;
 
 in vec3 normalCamSpace; //нормаль в системе координат камеры (интерполирована между вершинами треугольника)
 in vec4 posCamSpace; //координаты вершины в системе координат камеры (интерполированы между вершинами треугольника)

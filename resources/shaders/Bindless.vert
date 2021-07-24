@@ -83,7 +83,7 @@ void main() {
 
     colour = vec3((height + 1.0) / 20.0, height / 20.0, 1.0/(100.0 + height));
     TexCoord = texCoord;
-    posCamSpace = view * model * vec4(vertexPosition, 1.0); //преобразование координат вершины в систему координат камеры
+    posCamSpace = view * model * vec4(final_pos, 1.0); //преобразование координат вершины в систему координат камеры
     mat3 normalToCameraMatrix = normalToCamera[gl_InstanceID];
 	normalCamSpace = normalize(normalToCameraMatrix * norm); //преобразование нормали в систему координат камеры
 }

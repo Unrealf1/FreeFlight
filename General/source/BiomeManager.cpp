@@ -22,8 +22,8 @@ TerrainChunk BiomeManager::generateChunk(uint32_t points_in_chunk, const glm::ve
 
     for (uint32_t i = 0; i < result._vertices.size(); ++i) {
         for (uint32_t j = 0; j < result._vertices.size(); ++j) {
-            auto x = far_left.x + j * step;
-            auto y = far_left.y - i * step;
+            auto x = far_left.x + static_cast<float>(j) * step;
+            auto y = far_left.y - static_cast<float>(i) * step;
 
             float repeat_k = 6000.0f;
             float radius = 600.0f; 

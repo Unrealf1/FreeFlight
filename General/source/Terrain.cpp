@@ -88,8 +88,6 @@ void Terrain::draw(const RenderInfo& info) {
         _chunk_length / static_cast<float>(_points_in_chunk)
     );
 
-    spdlog::debug("location/value: {} {}", glGetUniformLocation(program, "step_len"), _chunk_length / static_cast<float>(_points_in_chunk));
-
     const auto num_chunks = std::min(instance_render_limit, datum.size()); 
 
     for(size_t i = 0; i < num_chunks; i++) {
@@ -322,9 +320,9 @@ void Terrain::updateBuffers() {
         auto& chunk = _active_chunks[c_i];
         auto chunk_offset = static_cast<uint32_t>(c_i) * chunk_data_size;
         chunk._ssbo_offset = chunk_offset;
-        for (size_t i = 0; i < chunk._vertices.size(); ++i) {
-            for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
-                auto index = chunk_offset + i * _points_in_chunk + j;
+        for (uint32_t i = 0; i < chunk._vertices.size(); ++i) {
+            for (uint32_t j = 0; j < chunk._vertices[i].size(); ++j) {
+                uint32_t index = chunk_offset + i * _points_in_chunk + j;
                 _additional_vertex_data[index].height = chunk._vertices[i][j].height;
                 _additional_vertex_data[index].texture = chunk._vertices[i][j].texture_handler;
                 _additional_vertex_data[index].secondary_texture = chunk._vertices[i][j].secondary_texture_handler;
@@ -364,13 +362,13 @@ void Terrain::updateBuffers() {
         size_t i = 0; // near end of the chunk
         if (near_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
-                auto index = chunk._ssbo_offset + i * _points_in_chunk + j;
+                uint32_t index = chunk._ssbo_offset + i * _points_in_chunk + j;
                 auto near_neighboor_index = near_chunk->_ssbo_offset + (near_chunk->_vertices.size() - 1) * _points_in_chunk + j;
                 _additional_vertex_data[near_neighboor_index].indexes.far = index;
             }
         } else {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
-                auto index = chunk._ssbo_offset + i * _points_in_chunk + j;
+                uint32_t index = chunk._ssbo_offset + i * _points_in_chunk + j;
                 _additional_vertex_data[index].indexes.near = index;
             }
         }
@@ -379,13 +377,13 @@ void Terrain::updateBuffers() {
         i = chunk._vertices.size() - 1; // far end of the chunk
         if (far_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
-                auto index = chunk._ssbo_offset + i * _points_in_chunk + j;
+                uint32_t index = chunk._ssbo_offset + i * _points_in_chunk + j;
                 auto far_neighboor_index = far_chunk->_ssbo_offset + 0 * _points_in_chunk + j;
                 _additional_vertex_data[far_neighboor_index].indexes.near = index;
             }
         } else {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
-                auto index = chunk._ssbo_offset + i * _points_in_chunk + j;
+                uint32_t index = chunk._ssbo_offset + i * _points_in_chunk + j;
                 _additional_vertex_data[index].indexes.far = index;
             }
         }
@@ -393,13 +391,13 @@ void Terrain::updateBuffers() {
         i = 0; // left end of the chunk
         if (left_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {
-                auto index = chunk._ssbo_offset + j * _points_in_chunk + i;
+                uint32_t index = chunk._ssbo_offset + j * _points_in_chunk + i;
                 auto left_neighboor_index = left_chunk->_ssbo_offset + j * _points_in_chunk + (_points_in_chunk - 1);
                 _additional_vertex_data[left_neighboor_index].indexes.right = index;
             }
         } else {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {
-                auto index = chunk._ssbo_offset + j * _points_in_chunk + i;
+                uint32_t index = chunk._ssbo_offset + j * _points_in_chunk + i;
                 _additional_vertex_data[index].indexes.left = index;
             }
         }
@@ -407,13 +405,13 @@ void Terrain::updateBuffers() {
         i = chunk._vertices.size() - 1; // right end of the chunk
         if (right_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {
-                auto index = chunk._ssbo_offset + j * _points_in_chunk + i;
+                uint32_t index = chunk._ssbo_offset + j * _points_in_chunk + i;
                 auto right_neighboor_index = right_chunk->_ssbo_offset + j * _points_in_chunk + 0;
                 _additional_vertex_data[right_neighboor_index].indexes.left = index;
             }
         } else {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {
-                auto index = chunk._ssbo_offset + j * _points_in_chunk + i;
+                uint32_t index = chunk._ssbo_offset + j * _points_in_chunk + i;
                 _additional_vertex_data[index].indexes.right = index;
             }
         }
@@ -463,12 +461,11 @@ float Terrain::getHeightAt(const glm::vec2& coords) {
         y_i = c._vertices.size() - y_i - 1ul;
 
         auto diff = closest_point - pos; 
-        const int64_t dir_x = std::signbit(diff.x) ? -1 : 1;
-        const int64_t dir_y = std::signbit(diff.y) ? -1 : 1;
+        const float dir_x = std::signbit(diff.x) ? -1.0f : 1.0f;
+        const float dir_y = std::signbit(diff.y) ? -1.0f : 1.0f;
         float dist1 = glm::distance(pos, closest_point);
         float dist2 = glm::distance(pos, closest_point - glm::vec2(step * dir_x, 0.0f));
         float dist3 = glm::distance(pos, closest_point - glm::vec2(0.0f, step * dir_y));
-        float sum_dist = dist1 + dist2 + dist3;
 
         auto count_k = [=](float dist){ return std::max(1.0f - dist / step,1.0f - dist / step); };
 
@@ -483,25 +480,26 @@ float Terrain::getHeightAt(const glm::vec2& coords) {
         float h1 = c._vertices[y_i][x_i].height;
 
         size_t x2_i = x_i;
-        if (x_i > 0 && dir_x == -1) {
+        if (x_i > 0 && dir_x == -1.0f) {
             x2_i -= 1;
         } 
-        if (x_i < c._vertices.size() - 1ul && dir_x == 1) {
+        if (x_i < c._vertices.size() - 1ul && dir_x == 1.0f) {
             x2_i += 1;
         }
 
         float h2 = c._vertices[y_i][x2_i].height;
 
         size_t y2_i = y_i;
-        if (y_i > 0 && dir_y == -1) {
+        if (y_i > 0 && dir_y == -1.0f) {
             y2_i -= 1;
         } 
-        if (y_i < c._vertices.size() - 1ul && dir_y == 1) {
+        if (y_i < c._vertices.size() - 1ul && dir_y == 1.0f) {
             y2_i += 1;
         }
         //c._vertices[y_i][x_i].texture_handler = get_test_tex_handle();
         //c._vertices[y2_i][x_i].texture_handler = get_test_tex_handle();
         //c._vertices[y_i][x2_i].texture_handler = get_test_tex_handle();
+        (void)get_test_tex_handle();
         //_active_chunks_updated = true;
 
         float h3 = c._vertices[y2_i][x_i].height;
