@@ -129,18 +129,18 @@ TexturedModel<> Terrain::createChunkModel() {
     Mesh<glm::vec2> chunk_tex_coords;
     chunk_tex_coords.reserve(_points_in_chunk * 2);
 
-    float cur_row = 0.5f;
-    float tex_row = 1.0f;
+    float cur_row = -0.5f;
+    float tex_row = 0.0f;
     float tex_repeat_per_chunk = _chunk_length / 20.0f;
     float tex_step = step * tex_repeat_per_chunk;
     for (size_t i = 0; i < _points_in_chunk - 1; ++i) { // from far to near
         float cur_column = -0.5f;
         float tex_column = 0.0f;
         for (size_t j = 0; j < _points_in_chunk - 1; ++j) { // from left to right
-            float far_left_ind = static_cast<float>(i * _points_in_chunk + j);
-            float far_right_ind = static_cast<float>(i * _points_in_chunk + j + 1);
-            float near_left_ind = static_cast<float>((i+1) * _points_in_chunk + j);
-            float near_right_ind = static_cast<float>((i+1) * _points_in_chunk + j + 1);
+            float near_left_ind = static_cast<float>(i * _points_in_chunk + j);
+            float near_right_ind = static_cast<float>(i * _points_in_chunk + j + 1);
+            float far_left_ind = static_cast<float>((i+1) * _points_in_chunk + j);
+            float far_right_ind = static_cast<float>((i+1) * _points_in_chunk + j + 1);
 
             // upper triangle
             mesh.push_back(glm::vec3(cur_column, cur_row, far_left_ind));
@@ -163,8 +163,8 @@ TexturedModel<> Terrain::createChunkModel() {
             cur_column += step;
             tex_column += tex_step;
         }
-        tex_row -= tex_step;
-        cur_row -= step;
+        tex_row += tex_step;
+        cur_row += step;
     }
     spdlog::info("mesh size is {}", mesh.size());
     Mesh<> norms(mesh.size(), {0.0f, 0.0f, 1.0f});
@@ -240,14 +240,12 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
         exit(1);
     }
 
-    auto far_left = position + glm::vec2(-_chunk_length/2.0f, _chunk_length/2.0f);
-    spdlog::info("requesting chunk from biome manager");
+    auto near_left = position - glm::vec2(_chunk_length/2.0f, _chunk_length/2.0f);
     float num_steps = static_cast<float>(_points_in_chunk - 1);
-    float step = 1.0f / num_steps;
-    TerrainChunk result = _biomeManager->generateChunk(_points_in_chunk, far_left, step * _chunk_length);
+    float step = 1.0f / num_steps * _chunk_length;
+    TerrainChunk result = _biomeManager->generateChunk(_points_in_chunk, near_left, step);
     result._center_location = position;
 
-    spdlog::info("corner vertex handler is {}", result._vertices[0][0].texture_handler);
     return result;
 
 }
@@ -258,17 +256,17 @@ Terrain::constChunkIt_t Terrain::getChunkCloseTo(const glm::vec2& position) {
     if (found != _active_chunks.end()) {
         return found;
     }
-    spdlog::info("chunk is not active...");
+    //spdlog::info("chunk is not active...");
 
     found = findChunkCloseTo(chunk_pos, _archived_chunks);
     if (found != _archived_chunks.end()) {
-        spdlog::info("the chunk was archived");
+        spdlog::info("the chunk was archived, making it active again");
         _active_chunks.push_back(*found);
         _active_chunks_updated = true;
         _archived_chunks.erase(found);
         return found;
     }
-    spdlog::info("chunk is not archived...");
+    //spdlog::info("chunk is not archived...");
     spdlog::debug("Generating new chunk at {} {}", chunk_pos.x, chunk_pos.y);
     auto new_chunk = generateChunkAt(chunk_pos);
     _active_chunks.push_back(new_chunk);
@@ -424,32 +422,15 @@ void Terrain::flushBuffers() {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-static GLuint64 get_test_tex_handle() {
-    static GLuint texture = TextureContainer::getTexture("resources/textures/test1.jpg");
-    static bool initialized = false;
-    static GLuint _sampler;
-    static GLuint64 handle;
-    if (!initialized) {
-        initialized = true;
-        glGenSamplers(1, &_sampler);
-        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-        handle = TexHandleContainer::createHandle(texture, _sampler);
-        glMakeTextureHandleResidentARB(handle);
-    }
-
-    return handle;
-}
-
 float Terrain::getHeightAt(const glm::vec2& coords) {
     //TODO: improve height calculation and interpolate between points
     auto find_height_in_chunk = [this](TerrainChunk& c, const glm::vec2& pos) {
         const float half_len = _chunk_length / 2.0f;
         glm::vec2 near_left = c._center_location - glm::vec2(half_len, half_len);
-        glm::vec2 indices = pos - near_left;
-        const float step = _chunk_length / static_cast<float>(c._vertices.size());
-        float rounded_offset_x = std::roundf(indices.x / step);
-        float rounded_offset_y = std::roundf(indices.y / step);
+        glm::vec2 offsets = pos - near_left;
+        const float step = _chunk_length / static_cast<float>(c._vertices.size() - 1);
+        float rounded_offset_x = std::roundf(offsets.x / step);
+        float rounded_offset_y = std::roundf(offsets.y / step);
         
         glm::vec2 closest_point = glm::vec2{rounded_offset_x, rounded_offset_y} * step + near_left;
 
@@ -458,24 +439,13 @@ float Terrain::getHeightAt(const glm::vec2& coords) {
 
         x_i = std::min(std::max(x_i, 0ul), c._vertices.size() - 1ul);
         y_i = std::min(std::max(y_i, 0ul), c._vertices.size() - 1ul);
-        y_i = c._vertices.size() - y_i - 1ul;
 
         auto diff = closest_point - pos; 
-        const float dir_x = std::signbit(diff.x) ? -1.0f : 1.0f;
-        const float dir_y = std::signbit(diff.y) ? -1.0f : 1.0f;
-        float dist1 = glm::distance(pos, closest_point);
-        float dist2 = glm::distance(pos, closest_point - glm::vec2(step * dir_x, 0.0f));
-        float dist3 = glm::distance(pos, closest_point - glm::vec2(0.0f, step * dir_y));
-
-        auto count_k = [=](float dist){ return std::max(1.0f - dist / step,1.0f - dist / step); };
-
-        float k1 = count_k(dist1);
-        float k2 = count_k(dist2);
-        float k3 = count_k(dist3);
-        float k_sum = k1 + k2 + k3;
-        k1 = k1/k_sum;
-        k2 = k2/k_sum;
-        k3 = k3/k_sum; 
+        const float dir_x = diff.x < 0.0f ? -1.0f : 1.0f;
+        const float dir_y = diff.y < 0.0f ? -1.0f : 1.0f;
+        glm::vec2 p1 = closest_point;
+        glm::vec2 p2 = closest_point + glm::vec2(step * dir_x, 0.0f);
+        glm::vec2 p3 = closest_point + glm::vec2(0.0f, step * dir_y);
 
         float h1 = c._vertices[y_i][x_i].height;
 
@@ -496,22 +466,42 @@ float Terrain::getHeightAt(const glm::vec2& coords) {
         if (y_i < c._vertices.size() - 1ul && dir_y == 1.0f) {
             y2_i += 1;
         }
-        //c._vertices[y_i][x_i].texture_handler = get_test_tex_handle();
-        //c._vertices[y2_i][x_i].texture_handler = get_test_tex_handle();
-        //c._vertices[y_i][x2_i].texture_handler = get_test_tex_handle();
-        (void)get_test_tex_handle();
-        //_active_chunks_updated = true;
 
         float h3 = c._vertices[y2_i][x_i].height;
         
-        //spdlog::debug("\nDIST:\n1: {}\t2: {}\t3: {}\n1: {}\t2: {}\t3: {}\n", dist1, dist2, dist3, k1, k2, k3);
-        // auto p2 = closest_point - glm::vec2(step * dir_x, 0.0f);
-        // auto p3 = closest_point - glm::vec2(0.0f, step * dir_y);
+        // в данный момент есть три точки, задающие плоскость в которой мы ищем высоту
+        // значит зная уровнение плоскости, по X, Y можно вычислить Z.
+
+        glm::vec3 d21 = glm::vec3(p2.x, p2.y, h2) - glm::vec3(p1.x, p1.y, h1);
+        glm::vec3 d31 = glm::vec3(p3.x, p3.y, h3) - glm::vec3(p1.x, p1.y, h1);
+
+        const float s1 = d21.y*d31.z - d21.z*d31.y;
+        const float s2 = d21.x*d31.z - d21.z*d31.x;
+        const float s3 = d21.x*d31.y - d21.y*d31.x;
+
+        const float A = s1;
+        const float B = s2;
+        const float C = s3;
+        const float D = -p1.x * s1 + p1.y * s2 - h1*s3;
+
+        float res_h = -(A*pos.x + B*pos.y + D) / C;
         // spdlog::debug(
         //    "POINTS:\n1: {}\t/\t{}\t({})\n2: {}\t/\t{}\t({})\n3: {}\t/\t{}\t({})\n", 
         //    closest_point.x, closest_point.y, h1, p2.x, p2.y, h2, p3.x, p3.y, h3
-        //);
-        return h1*k1 + h2*k2 + h3*k3;
+        // );
+        // spdlog::debug(
+        //    "s1/s2/s3:\n1: {}\t/\t{}\t({})\n", 
+        //     s1, s2, s3
+        // );
+        // spdlog::debug(
+        //    "A: {} B:{} C:{} D:{}", 
+        //     A, B, C, D
+        // );
+        return h1;
+        return res_h;
+
+        //spdlog::debug("\nDIST:\n1: {}\t2: {}\t3: {}\n1: {}\t2: {}\t3: {}\n", dist1, dist2, dist3, k1, k2, k3);
+        
 
         //return c._vertices[y_i][x_i].height;
     };

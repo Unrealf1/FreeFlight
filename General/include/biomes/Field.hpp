@@ -19,10 +19,10 @@ public:
         glMakeTextureHandleResidentARB(_texHandle);
     }
 
-    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& far_left, float step) override {
-        float y = far_left.y;       
+    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& near_left, float step) override {
+        float y = near_left.y;       
         for (size_t i = 0; i < vertices.size(); ++i) {
-            float x = far_left.x;
+            float x = near_left.x;
             for (size_t j = 0; j < vertices[i].size(); ++j) {
                 float height = 1.0f;
                 height += SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 8.0f;
@@ -33,7 +33,7 @@ public:
                 vertices[i][j].texture_handler = _texHandle;
                 x += step;
             }
-            y -= step;
+            y += step;
         }
     }
 

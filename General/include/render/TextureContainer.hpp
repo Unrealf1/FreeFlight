@@ -13,6 +13,8 @@ public:
         return _textures.find(name) != _textures.end();
     }
 
+    inline static const std::string debugTextureName = "resources/textures/test1.jpg";
+
     static GLuint getTexture(const std::string& name) {
         if (checkTexture(name)) {
             return _textures.at(name);

@@ -9,6 +9,7 @@ struct UpdateInfo {
     GLFWwindow* window;
     double dt;
     std::shared_ptr<Terrain> terrain;
+    float daytime;
 };
 
 class Updatable {

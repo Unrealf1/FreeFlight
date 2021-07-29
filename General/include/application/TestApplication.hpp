@@ -6,7 +6,8 @@
 #include "primitives/Square.hpp"
 #include "player/PlayerController.hpp"
 #include "terrain/Terrain.hpp"
-#include "light/Light.hpp"
+#include "light/SelestialLight.hpp"
+#include "primitives/Skybox.hpp"
 
 #include <chrono>
 #include <thread>
@@ -53,7 +54,7 @@ protected:
     std::vector<std::shared_ptr<PlayerDependable>> _player_dependable;
 
     std::shared_ptr<Terrain> _terrain;
-    std::shared_ptr<DirectionalLight> _sun;
+    std::shared_ptr<SelestialLight> _sun;
 
     frame_clock::time_point _last_frame_time;
     int64_t _fps = 0; // current
@@ -72,7 +73,7 @@ protected:
         RenderInfo renderInfo;
         renderInfo.view_mat = cam_info.viewMatrix;
         renderInfo.proj_mat = cam_info.projMatrix;
-        renderInfo.sun = _sun;
+        renderInfo.sun = _sun->getLightInfo();
         //...
         for (auto& item : _drawable) {
             item->draw(renderInfo);
@@ -100,8 +101,8 @@ protected:
                 _cameraMover->setSpeed(old_spd / 2);
             }
 
-            ImGui::SliderFloat("phi", &_phi, 0.0f, 2.0f * glm::pi<float>());
-            ImGui::SliderFloat("theta", &_theta, 0.0f, glm::pi<float>());
+            ImGui::SliderFloat("phi", &_sun->_phi, 0.0f, 2.0f * glm::pi<float>());
+            ImGui::SliderFloat("theta", &_sun->_theta, 0.0f, glm::pi<float>());
         }
         ImGui::End();
     }
@@ -115,22 +116,25 @@ protected:
 
         _logger->debug("creating terrain...");
         _terrain = std::make_shared<Terrain>(_params.points_in_chunk, _params.chunk_length, _params.view_distance);
-        _sun = std::make_shared<DirectionalLight>();
         _drawable.push_back(_terrain);
         _player_dependable.push_back(_terrain);
+
+        _sun = std::make_shared<SelestialLight>(_params.dawn_intensity, _params.daylength);
+        _updatable.push_back(_sun);
+
+        auto skybox = std::make_shared<Skybox>();
+        _drawable.push_back(skybox);
+        _updatable.push_back(skybox);
 
         for (auto& item : _drawable) {
             item->init();
         }
     }
 
-    float _phi = 0.0;
-    float _theta = glm::pi<float>() * 0.25f;
-
     virtual void onUpdate(UpdateInfo& info) override {
         info.terrain = _terrain;
+        info.daytime = _sun->getDayTime();
         _cameraMover->update(info);
-        _sun->direction = glm::vec3(glm::cos(_phi) * glm::cos(_theta), glm::sin(_phi) * glm::cos(_theta), glm::sin(_theta));
 
         for (auto& item : _updatable) {
             item->update(info);

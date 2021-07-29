@@ -27,7 +27,7 @@ in vec3 normalCamSpace; //нормаль в системе координат к
 in vec4 posCamSpace; //координаты вершины в системе координат камеры (интерполированы между вершинами треугольника)
 in vec2 texCoord; //текстурные координаты (интерполирована между вершинами треугольника)
 
-flat in vec3 debug;
+in float debug;
 
 void main() {
     vec4 texColor = texture(ourTexture, TexCoord);
@@ -56,5 +56,5 @@ void main() {
 		//color = vec3(1.0, 0.0, 0.0);
 	}
 	fragColor = vec4(color, 1.0);
-	//fragColor = vec4(vec3(debug), 1.0);
+	//fragColor = vec4(vec3(debug / 20.0), 1.0);
 }

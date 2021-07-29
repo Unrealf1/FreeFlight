@@ -20,13 +20,13 @@ public:
         glMakeTextureHandleResidentARB(_texHandle);
     }
 
-    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& far_left, float step) override {
+    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& near_left, float step) override {
         std::vector<std::vector<float>> heights;
         heights.resize(vertices.size());
         for (size_t i = 0; i < vertices.size(); ++i) {
             heights[i].resize(vertices[i].size());
         }
-        generateHeightsNoise(heights, far_left, step);
+        generateHeightsLinear(heights, near_left, step);
         
         for (size_t i = 0; i < vertices.size(); ++i) {
             for (size_t j = 0; j < vertices[i].size(); ++j) {
@@ -52,17 +52,17 @@ private:
     GLuint64 _texHandle;
 
 
-    void generateHeightsNoise(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
-        float y = far_left.y;
+    void generateHeightsNoise(std::vector<std::vector<float>>& heights, const glm::vec2& near_left, float step) {
+        float y = near_left.y;
         for (auto& row : heights) {
-            float x = far_left.x;
-            y -= step;
+            float x = near_left.x;
             for (auto& elem : row) {
                 elem = SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 10.0f;
                 //elem += std::sin(0.001f * x) / 2.0f; 
                 elem += SimplexNoise1234::noise(0.008f * (x + 777.0f), 0.008f * (y + 12345.0f)) * 5.0f;;
                 x += step;
             }
+            y += step;
         }
     }
 
@@ -74,32 +74,32 @@ private:
         }
     }
 
-    void generateHeightsLinear(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
-        float y = far_left.y;
+    void generateHeightsLinear(std::vector<std::vector<float>>& heights, const glm::vec2& near_left, float step) {
+        float y = near_left.y;
         float alpha = 0.1f;
         for (auto& row : heights) {
-            float x = far_left.x;
+            float x = near_left.x;
             for (auto& elem : row) {
                 elem = (y) * alpha;
                 fmt::print("{} ({}, {}), ", elem, x, y);
                 x += step;
             }
-            y -= step;
+            y += step;
             fmt::print("\n");
         }
-        spdlog::error("far left is {} {}", far_left.x, far_left.y);
-        spdlog::error("step is {}, size is {}", step, heights.size());
+        spdlog::debug("near left is {} {}", near_left.x, near_left.y);
+        spdlog::debug("step is {}, size is {}", step, heights.size());
     }
 
-    void generateHeightsSin(std::vector<std::vector<float>>& heights, const glm::vec2& far_left, float step) {
-        float y = far_left.y;
+    void generateHeightsSin(std::vector<std::vector<float>>& heights, const glm::vec2& near_left, float step) {
+        float y = near_left.y;
         for (auto& row : heights) {
-            float x = far_left.x;
-            y -= step;
+            float x = near_left.x;
             for (auto& elem : row) {
                 elem = std::sin(x) + std::cos(y * 0.001f);
                 x += step;
             }
+            y += step;
         }
     }
 

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <unordered_map>
 
+
 static const char* const view_distance_id = "view_distance";
 static const char* const near_plane_id = "near_plane";
 static const char* const far_plane_id = "far_plane";
@@ -13,6 +14,8 @@ static const char* const window_name_id = "window_name";
 static const char* const points_in_chunk_id = "points_in_chunk";
 static const char* const chunk_length_id = "chunk_length";
 static const char* const max_fps_id = "max_fps";
+static const char* const daylength_id = "daylength";
+static const char* const dawn_intensity_id = "dawn_intensity";
 
 
 ApplicationParameters ApplicationParametersReader::read(const std::string& filepath) {
@@ -43,6 +46,8 @@ ApplicationParameters ApplicationParametersReader::read(const std::string& filep
     result.window_name = root[window_name_id].asString();
     result.points_in_chunk = root[points_in_chunk_id].asInt();
     result.max_fps = root[max_fps_id].asInt();
+    result.daylength = extract_float(daylength_id);
+    result.dawn_intensity = extract_float(dawn_intensity_id);
 
     return result;
 }
@@ -69,6 +74,8 @@ void ApplicationParametersWriter::write(const ApplicationParameters& parameters,
     json[points_in_chunk_id] = parameters.points_in_chunk;
     json[chunk_length_id] = parameters.chunk_length;
     json[max_fps_id] = parameters.max_fps;
+    json[daylength_id] = parameters.daylength;
+    json[dawn_intensity_id] = parameters.dawn_intensity;
 
     auto file = std::ofstream(filepath);
     file << json;
