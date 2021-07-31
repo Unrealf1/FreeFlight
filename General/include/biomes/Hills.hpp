@@ -7,48 +7,57 @@
 #include <spdlog/spdlog.h>
 #include <fmt/core.h>
 
-class Hills: public Biome {
+class Hills: public SimpleBiome {
 public:
-    Hills(const char* texname = "resources/textures/minecraft_textures/block/mossy_cobblestone.png") {
+    Hills() {
+        const char* texname_bot = "resources/textures/minecraft_textures/block/mossy_cobblestone.png";
+        const char* texname_top = "resources/textures/minecraft_textures/block/cobblestone.png";
+        
         glGenSamplers(1, &_sampler);
-        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        _texture = TextureContainer::getTexture(texname);
+        _texture = TextureContainer::getTexture(texname_bot);
         _texHandle = TexHandleContainer::createHandle(_texture, _sampler);
+
+        auto tex2 = TextureContainer::getTexture(texname_top);
+        _texHandle2 = TexHandleContainer::createHandle(tex2, _sampler);
         glMakeTextureHandleResidentARB(_texHandle);
-    }
-
-    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& near_left, float step) override {
-        float y = near_left.y;       
-        for (size_t i = 0; i < vertices.size(); ++i) {
-            float x = near_left.x;
-            for (size_t j = 0; j < vertices[i].size(); ++j) {
-                float height = 40.0f;
-                height += SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 12.0f;
-                height += SimplexNoise1234::noise(0.004f * (x + 333.0f), 0.008f * (y + 54321.0f)) * 160.0f;
-                height += (std::sin(0.00005f * x) + std::cos(0.00005f * y) + 1.0f) * 10.0f;
-
-                vertices[i][j].height = height;
-                vertices[i][j].texture_handler = _texHandle;
-                x += step;
-            }
-            y += step;
-        }
+        glMakeTextureHandleResidentARB(_texHandle2);
     }
 
     GLuint getTexture() {
         return 0;
     }
     biomeId_t getId() {
-        return BiomeId::Test;
+        return BiomeId::Hills;
     }
 
     std::string name() {
         return "hills";
     }
+
+protected:
+    ChunkVertex generateVertex(const glm::vec2& position, const BiomeCenter& related_center) {
+        float x = position.x;
+        float y = position.y;
+        ChunkVertex res;
+
+        float height = 60.0f;
+        height += SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 12.0f;
+        float slowness = 0.001f;
+        height += SimplexNoise1234::noise(slowness * (x + 333.0f), slowness * (y + 54321.0f)) * 130.0f;
+        height += SimplexNoise1234::noise(slowness * 15.0f * (x + 73145.0f), slowness * 15.0f * (y + 400.0f)) * 17.0f;
+        height += (std::sin(0.00005f * x) + std::cos(0.00005f * y) + 1.0f) * 10.0f;
+
+        res.height = height;
+        res.texture_handler = height > 100.0f ? _texHandle2 : _texHandle;
+        return res;
+    }
+
 private:
     GLuint _sampler;
     GLuint _texture;
     GLuint64 _texHandle;
+    GLuint64 _texHandle2;
 };

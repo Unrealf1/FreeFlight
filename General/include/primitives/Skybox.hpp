@@ -50,7 +50,6 @@ public:
             glGetUniformLocation(program, "night_weight"),
             _day_night_ratio
         );
-        spdlog::info("_day_night_ratio is {}", _day_night_ratio);
 
 		// Draws the cubemap as the last object so we can save a bit of performance by discarding all fragments
 		// where an object is present (a depth of 1.0f will always fail against any object's depth value)

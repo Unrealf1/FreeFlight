@@ -240,11 +240,33 @@ TerrainChunk Terrain::generateChunkAt(const glm::vec2& position) {
         exit(1);
     }
 
-    auto near_left = position - glm::vec2(_chunk_length/2.0f, _chunk_length/2.0f);
+    auto near_left = position - glm::vec2(_chunk_length/2.0f);
     float num_steps = static_cast<float>(_points_in_chunk - 1);
     float step = 1.0f / num_steps * _chunk_length;
     TerrainChunk result = _biomeManager->generateChunk(_points_in_chunk, near_left, step);
     result._center_location = position;
+
+    auto regenerate_biome_information = [&](Terrain::chunkIt_t iter){
+        if (iter == _active_chunks.end()) {
+            return;
+        }
+        // TODO: why is this necessary?
+        auto tmp = _biomeManager->generateChunk(_points_in_chunk, iter->_center_location - glm::vec2(_chunk_length/2.0f), step);
+        iter->_vertices = tmp._vertices;
+    };
+    // this chunks should be updated as biome manager might changed their biome distribution
+    auto left_chunk = findChunkCloseTo(result._center_location - glm::vec2(_chunk_length, 0.0f), _active_chunks);
+    auto near_chunk = findChunkCloseTo(result._center_location - glm::vec2(0.0f, _chunk_length), _active_chunks);
+    auto right_chunk = findChunkCloseTo(result._center_location + glm::vec2(_chunk_length, 0.0f), _active_chunks);
+    auto far_chunk = findChunkCloseTo(result._center_location + glm::vec2(0.0f, _chunk_length), _active_chunks);
+    regenerate_biome_information(left_chunk);
+    regenerate_biome_information(near_chunk);
+    regenerate_biome_information(right_chunk);
+    regenerate_biome_information(far_chunk);
+
+    //std::ranges::for_each(_active_chunks, regenerate_biome_information);
+
+    _active_chunks_updated = true;
 
     return result;
 
@@ -256,7 +278,7 @@ Terrain::constChunkIt_t Terrain::getChunkCloseTo(const glm::vec2& position) {
     if (found != _active_chunks.end()) {
         return found;
     }
-    //spdlog::info("chunk is not active...");
+    spdlog::debug("no active chunk at position {}/{}", position.x, position.y);
 
     found = findChunkCloseTo(chunk_pos, _archived_chunks);
     if (found != _archived_chunks.end()) {

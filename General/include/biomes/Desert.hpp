@@ -7,12 +7,12 @@
 #include <spdlog/spdlog.h>
 #include <fmt/core.h>
 
-class Field: public SimpleBiome {
+class Desert: public SimpleBiome {
 public:
-    Field(const char* texname = "resources/textures/grass3.jpg") {
+    Desert(const char* texname = "resources/textures/minecraft_textures/block/sand.png") {
         glGenSamplers(1, &_sampler);
-        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         _texture = TextureContainer::getTexture(texname);
         _texHandle = TexHandleContainer::createHandle(_texture, _sampler);
@@ -23,11 +23,11 @@ public:
         return 0;
     }
     biomeId_t getId() {
-        return BiomeId::Field;
+        return BiomeId::Desert;
     }
 
     std::string name() {
-        return "field";
+        return "desert";
     }
 
 protected:
@@ -36,10 +36,10 @@ protected:
         float y = position.y;
 
         ChunkVertex res;
-        float height = 1.0f;
+        float height = 20.0f;
         height += SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 8.0f;
-        height += SimplexNoise1234::noise(0.003f * (x + 333.0f), 0.003f * (y + 54321.0f)) * 2.0f;
-        height += (std::sin(0.00005f * x) + std::cos(0.00005f * y)) * 2.0f;
+        height += SimplexNoise1234::noise(0.009f * (x + 333.0f), 0.003f * (y + 54321.0f)) * 20.0f;
+        height += (std::sin(0.00005f * x) + std::cos(0.00005f * y)) * 5.0f;
 
         res.height = height;
         res.texture_handler = _texHandle;

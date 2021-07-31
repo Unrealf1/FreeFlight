@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <GL/glew.h>
 
+
 struct ChunkVertex {
     float height;
     GLuint64 texture_handler;

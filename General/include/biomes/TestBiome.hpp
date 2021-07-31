@@ -20,7 +20,7 @@ public:
         glMakeTextureHandleResidentARB(_texHandle);
     }
 
-    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& near_left, float step) override {
+    void generateVertices(TerrainChunk::vertexMap_t& vertices, const glm::vec2& near_left, float step, const std::vector<std::vector<BiomeCenter>>& related_centers) override {
         std::vector<std::vector<float>> heights;
         heights.resize(vertices.size());
         for (size_t i = 0; i < vertices.size(); ++i) {
