@@ -27,7 +27,7 @@ in vec3 normalCamSpace; //нормаль в системе координат к
 in vec4 posCamSpace; //координаты вершины в системе координат камеры (интерполированы между вершинами треугольника)
 in vec2 texCoord; //текстурные координаты (интерполирована между вершинами треугольника)
 
-in float debug;
+in vec3 debug;
 
 void main() {
     vec4 texColor = texture(ourTexture, TexCoord);
@@ -46,14 +46,14 @@ void main() {
 	float NdotL = max(dot(normal, lightDirCamSpace.xyz), 0.0); //скалярное произведение (косинус)
 
     vec3 color = diffuseColor * (light.La + light.Ld * NdotL);
-
+	//color = normalCamSpace;
     if (NdotL > 0.0) {			
 		vec3 halfVector = normalize(lightDirCamSpace.xyz + viewDirection); //биссектриса между направлениями на камеру и на источник света
 
 		float blinnTerm = max(dot(normal, halfVector), 0.0); //интенсивность бликового освещения по Блинну				
 		blinnTerm = pow(blinnTerm, shininess); //регулируем размер блика
 		color += (light.Ls * Ks * blinnTerm);
-		//color = vec3(1.0, 0.0, 0.0);
+		//color = normalCamSpace;
 	}
 	fragColor = vec4(color, 1.0);
 	//fragColor = vec4(vec3(debug / 20.0), 1.0);

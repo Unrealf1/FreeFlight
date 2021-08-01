@@ -108,7 +108,8 @@ void Terrain::draw(const RenderInfo& info) {
                 glGetUniformLocation(program, ("normalToCamera[" + index + "]").c_str()),
                 1,
                 GL_FALSE,
-                glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(info.view_mat * datum[datum_ix].model_mat))))
+                //glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(info.view_mat * datum[datum_ix].model_mat))))
+                glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(info.view_mat))))
             );
             glUniform1ui(
                 glGetUniformLocation(program, ("offsets[" + index + "]").c_str()),

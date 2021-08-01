@@ -44,7 +44,7 @@ out float secondary_texture_weight;
 out vec3 normalCamSpace; //нормаль в системе координат камеры
 out vec4 posCamSpace; //координаты вершины в системе координат камеры
 
-out float debug;
+out vec3 debug;
 
 
 /*
@@ -79,7 +79,7 @@ void main() {
     vec3 grad2 = vec3(0.0, (2 * step_len),  additional_vertex_data[far_index].height - additional_vertex_data[near_index].height) / (step_len * 2.0);
     vec3 norm = normalize(cross(grad1, grad2));
     norm.z = abs(norm.z);
-    debug = height;
+    debug = norm;
 
     colour = vec3((height + 1.0) / 20.0, height / 20.0, 1.0/(100.0 + height));
     TexCoord = texCoord;
