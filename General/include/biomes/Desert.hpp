@@ -38,7 +38,7 @@ protected:
         ChunkVertex res;
         float height = 20.0f;
         height += SimplexNoise1234::noise(0.0008f * x, 0.0008f * y) * 8.0f;
-        height += SimplexNoise1234::noise(0.009f * (x + 333.0f), 0.003f * (y + 54321.0f)) * 20.0f;
+        height += SimplexNoise1234::noise(0.0045f * (x + 333.0f), 0.0015f * (y + 54321.0f)) * 20.0f;
         height += (std::sin(0.00005f * x) + std::cos(0.00005f * y)) * 5.0f;
 
         res.height = height;

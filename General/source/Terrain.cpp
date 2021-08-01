@@ -25,22 +25,23 @@ void Terrain::draw(const RenderInfo& info) {
     std::vector<ChunkData> datum;
     datum.reserve(_active_chunks.size());
     auto base_mat = glm::mat4(1.0f);
-    std::transform(
-        _active_chunks.begin(), 
-        _active_chunks.end(), 
-        std::back_inserter(datum), [&base_mat, this](const TerrainChunk& c){
+    std::ranges::transform( 
+        _active_chunks, 
+        std::back_inserter(datum), 
+        [&base_mat, this](const TerrainChunk& c){
             ChunkData result;
             result.model_mat = glm::translate(base_mat, glm::vec3(c._center_location, 0.0f)) * _scale_mat;
             result.heights_buffer_offset = c._ssbo_offset;
             return result;
-    });
+        }
+    );
 
     auto program = ProgramContainer::getProgram(terrain_program_name);
 
     glUseProgram(program);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _graphics.texture);
+    // glActiveTexture(GL_TEXTURE0);
+    // glBindTexture(GL_TEXTURE_2D, _graphics.texture);
 
     glBindVertexArray(_graphics.vao);
     glUniformMatrix4fv(
@@ -88,32 +89,38 @@ void Terrain::draw(const RenderInfo& info) {
         _chunk_length / static_cast<float>(_points_in_chunk)
     );
 
-    const auto num_chunks = std::min(instance_render_limit, datum.size()); 
+    std::size_t already_rendered = 0;
 
-    for(size_t i = 0; i < num_chunks; i++) {
-        std::string index = std::to_string(i);
-        //TODO: rewrite this without loop
-        glUniformMatrix4fv(
-            glGetUniformLocation(program, ("models[" + index + "]").c_str()),
-            1,
-            GL_FALSE,
-            glm::value_ptr(datum[i].model_mat)
-        );
-        glUniformMatrix3fv(
-            glGetUniformLocation(program, ("normalToCamera[" + index + "]").c_str()),
-            1,
-            GL_FALSE,
-            glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(info.view_mat * datum[i].model_mat))))
-        );
-        glUniform1ui(
-            glGetUniformLocation(program, ("offsets[" + index + "]").c_str()),
-            datum[i].heights_buffer_offset
-        );
+    while (already_rendered < datum.size()) {
+        const auto num_chunks = std::min(instance_render_limit, datum.size() - already_rendered); 
 
+        for(size_t i = 0; i < num_chunks; i++) {
+            std::string index = std::to_string(i);
+            size_t datum_ix = i + already_rendered;
+            //TODO: rewrite this without loop
+            glUniformMatrix4fv(
+                glGetUniformLocation(program, ("models[" + index + "]").c_str()),
+                1,
+                GL_FALSE,
+                glm::value_ptr(datum[datum_ix].model_mat)
+            );
+            glUniformMatrix3fv(
+                glGetUniformLocation(program, ("normalToCamera[" + index + "]").c_str()),
+                1,
+                GL_FALSE,
+                glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(info.view_mat * datum[datum_ix].model_mat))))
+            );
+            glUniform1ui(
+                glGetUniformLocation(program, ("offsets[" + index + "]").c_str()),
+                datum[datum_ix].heights_buffer_offset
+            );
+        }
+        already_rendered += num_chunks;
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _additional_vertex_data_ssbo);
+
+        glDrawArraysInstanced(GL_TRIANGLES, 0, _graphics.vertex_cnt, static_cast<GLsizei>(num_chunks));
     }
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _additional_vertex_data_ssbo);
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, _graphics.vertex_cnt, static_cast<GLsizei>(num_chunks));
     glBindVertexArray(0);
     
 }
@@ -177,7 +184,8 @@ void Terrain::init() {
 
     auto chunk_base_model = createChunkModel();
 
-    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/ground1.jpg");
+    // TOOD: textured initializer is called to init texcoords
+    _graphics = GraphicsInitializer::initObject(chunk_base_model, "resources/textures/non_existent_texture.jpg");
 
     spdlog::info("graphics has {} vertices", _graphics.vertex_cnt);
 
@@ -444,7 +452,17 @@ void Terrain::flushBuffers() {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
+std::string Terrain::getBiomeNameAt(const glm::vec2& coords) {
+    auto id = _biomeManager->getBiomeIdAt(coords);
+    return _biomeManager->getBiomeById(id)->name();
+}
+
 float Terrain::getHeightAt(const glm::vec2& coords) {
+    // this is not ideal: smoothing is not respected
+    // and displayed height is less precise, as it is
+    // interpolated between points
+    return _biomeManager->getRawHeightAt(coords);
+
     //TODO: improve height calculation and interpolate between points
     auto find_height_in_chunk = [this](TerrainChunk& c, const glm::vec2& pos) {
         const float half_len = _chunk_length / 2.0f;

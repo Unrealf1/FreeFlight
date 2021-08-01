@@ -20,6 +20,9 @@ public:
 
     std::shared_ptr<Biome> get_biome_at(const glm::vec3& position);
     TerrainChunk generateChunk(uint32_t points_in_chunk, const glm::vec2& near_left, float step);
+    float getRawHeightAt(const glm::vec2& position);
+    biomeId_t getBiomeIdAt(const glm::vec2& position);
+    std::shared_ptr<Biome> getBiomeById(const biomeId_t& id);
 private:
     std::vector<std::shared_ptr<Biome>> _active_biomes;
     std::vector<BiomeCenter> _biome_centers;
@@ -35,4 +38,5 @@ private:
     std::vector<std::vector<BiomeCenter>> findAllRelatedCenters(uint32_t points_in_chunk, const glm::vec2& near_left, float step);
     BiomeCenter generateRandomBiomeAt(const glm::vec2& position);
     void updateCenters(const glm::vec2& position);
+    ChunkVertex getVertexAt(const glm::vec2& position);
 };

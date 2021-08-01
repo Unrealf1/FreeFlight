@@ -32,6 +32,7 @@ public:
 
     // const means, that this will __not__ create new chunks.
     float getHeightAt(const glm::vec2& coords);
+    std::string getBiomeNameAt(const glm::vec2& coords);
 
     using chunkContainer_t = std::deque<TerrainChunk>;
     using chunkIt_t = chunkContainer_t::iterator;
@@ -61,7 +62,7 @@ private:
     GraphicObject _graphics;
     chunkContainer_t _archived_chunks;
     chunkContainer_t _active_chunks;
-    static constexpr std::size_t _active_chunk_limit = instance_render_limit;
+    static constexpr std::size_t _active_chunk_limit = instance_render_limit * 100;
     const std::size_t _archived_chunks_limit = 1000;
     static constexpr std::size_t chunk_size_limit = 500;
     static constexpr std::size_t max_points_in_chunk = chunk_size_limit * chunk_size_limit;

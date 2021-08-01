@@ -28,6 +28,10 @@ public:
             if (key == GLFW_KEY_ESCAPE)
             {
                 glfwSetWindowShouldClose(_window, GL_TRUE);
+            } else if (key == GLFW_KEY_PAGE_DOWN) {
+                decrSpeed();
+            } else if (key == GLFW_KEY_PAGE_UP) {
+                incrSpeed();
             }
         }
 
@@ -35,7 +39,7 @@ public:
     }
 
     virtual void handleMouseMove(double xpos, double ypos) override {
-        if (/*ImGui::IsMouseHoveringAnyWindow()*/ false)
+        if (ImGui::GetIO().WantCaptureMouse)
         {
             return;
         }
@@ -92,19 +96,30 @@ protected:
             ImGui::Text("Latitude: %.1hf", pos.z - _terrain->getHeightAt({pos.x, pos.y}));
             ImGui::Text("Terrain height: %.1hf", _terrain->getHeightAt({pos.x, pos.y}));
 
+            ImGui::Text("Currently in biome \"%s\"", _terrain->getBiomeNameAt({pos.x, pos.y}).c_str());
+
             if (ImGui::Button("Speed+")) {
-                auto old_spd = _cameraMover->getSpeed();
-                _cameraMover->setSpeed(old_spd * 2);
+                incrSpeed();
             }
             if (ImGui::Button("Speed-")) {
-                auto old_spd = _cameraMover->getSpeed();
-                _cameraMover->setSpeed(old_spd / 2);
+                decrSpeed();
             }
 
-            ImGui::SliderFloat("phi", &_sun->_phi, 0.0f, 2.0f * glm::pi<float>());
-            ImGui::SliderFloat("theta", &_sun->_theta, 0.0f, glm::pi<float>());
+            ImGui::SliderFloat("sun phi", &_sun->_phi, 0.0f, 2.0f * glm::pi<float>());
+            ImGui::SliderFloat("sun theta", &_sun->_theta, 0.0f, glm::pi<float>());
+
         }
         ImGui::End();
+    }
+
+    void incrSpeed() {
+        auto old_spd = _cameraMover->getSpeed();
+        _cameraMover->setSpeed(old_spd * 2);
+    }
+
+    void decrSpeed() {
+        auto old_spd = _cameraMover->getSpeed();
+        _cameraMover->setSpeed(old_spd / 2);
     }
 
     virtual void prepareScene() override {

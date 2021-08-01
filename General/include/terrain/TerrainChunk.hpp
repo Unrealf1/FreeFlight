@@ -9,7 +9,7 @@ struct ChunkVertex {
     float height;
     GLuint64 texture_handler;
     GLuint64 secondary_texture_handler;
-    float secondary_texture_weight;
+    float secondary_texture_weight = 0.0f;
 };
 
 struct TerrainChunk {

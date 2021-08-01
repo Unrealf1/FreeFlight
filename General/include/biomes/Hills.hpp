@@ -17,13 +17,13 @@ public:
         glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glSamplerParameterf(_sampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        _texture = TextureContainer::getTexture(texname_bot);
-        _texHandle = TexHandleContainer::createHandle(_texture, _sampler);
+        auto tex1 = TextureContainer::getTexture(texname_bot);
+        _texHandleLow = TexHandleContainer::createHandle(tex1, _sampler);
 
         auto tex2 = TextureContainer::getTexture(texname_top);
-        _texHandle2 = TexHandleContainer::createHandle(tex2, _sampler);
-        glMakeTextureHandleResidentARB(_texHandle);
-        glMakeTextureHandleResidentARB(_texHandle2);
+        _texHandleHight = TexHandleContainer::createHandle(tex2, _sampler);
+        glMakeTextureHandleResidentARB(_texHandleLow);
+        glMakeTextureHandleResidentARB(_texHandleHight);
     }
 
     GLuint getTexture() {
@@ -51,13 +51,12 @@ protected:
         height += (std::sin(0.00005f * x) + std::cos(0.00005f * y) + 1.0f) * 10.0f;
 
         res.height = height;
-        res.texture_handler = height > 100.0f ? _texHandle2 : _texHandle;
+        res.texture_handler = height > 90.0f ? _texHandleHight : _texHandleLow;
         return res;
     }
 
 private:
     GLuint _sampler;
-    GLuint _texture;
-    GLuint64 _texHandle;
-    GLuint64 _texHandle2;
+    GLuint64 _texHandleLow;
+    GLuint64 _texHandleHight;
 };

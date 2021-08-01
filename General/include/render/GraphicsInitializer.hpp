@@ -87,7 +87,7 @@ public:
         int width, height;
         unsigned char* image = SOIL_load_image(texture_file_path.c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
         if (!image) {
-            spdlog::error("SOIL loading error: {}", SOIL_last_result());
+            spdlog::error("SOIL loading error for texture at \"{}\": {}", texture_file_path, SOIL_last_result());
             return 0;
         }
         spdlog::debug("From file {}, created texture with id {}, w={}, h={}", texture_file_path, texture, width, height);
