@@ -29,9 +29,9 @@ private:
 
     Generator _random_generator;
 
-    const float _new_biome_threshold = 2000.0f;
-    const float _min_range = 1600.0f;
-    const float _max_range = 2200.0f;
+    const float _new_biome_threshold = 5000.0f;
+    const float _min_range = _new_biome_threshold * 0.8f;
+    const float _max_range = _new_biome_threshold * 1.2f;
 
     BiomeCenter findClosestCenter(const glm::vec2& position);
 

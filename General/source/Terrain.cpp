@@ -380,7 +380,7 @@ void Terrain::updateBuffers() {
         }
     }
     
-    // another pass, when all chunks are guaranteed to have vailid chunk_offset calculated
+    // another pass, when all chunks are guaranteed to have vailid _ssbo_offset calculated
     for (size_t c_i = 0; c_i < _active_chunks.size(); ++c_i) {
         auto& chunk = _active_chunks[c_i];
         auto left_chunk = findChunkCloseTo(chunk._center_location - glm::vec2(_chunk_length, 0.0f), _active_chunks);
@@ -392,10 +392,11 @@ void Terrain::updateBuffers() {
         if (near_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
                 uint32_t index = chunk._ssbo_offset + i * _points_in_chunk + j;
-                auto near_neighboor_index = near_chunk->_ssbo_offset + (near_chunk->_vertices.size() - 1) * _points_in_chunk + j;
-                _additional_vertex_data[near_neighboor_index].indexes.far = index;
+                auto near_neighboor_index = near_chunk->_ssbo_offset + (near_chunk->_vertices.size() - 2) * _points_in_chunk + j;
+                _additional_vertex_data[index].indexes.near = near_neighboor_index;
             }
         } else {
+            spdlog::info("for chunk at {}/{} didn't find near chunk", chunk._center_location.x, chunk._center_location.y);
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
                 uint32_t index = chunk._ssbo_offset + i * _points_in_chunk + j;
                 _additional_vertex_data[index].indexes.near = index;
@@ -407,8 +408,8 @@ void Terrain::updateBuffers() {
         if (far_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
                 uint32_t index = chunk._ssbo_offset + i * _points_in_chunk + j;
-                auto far_neighboor_index = far_chunk->_ssbo_offset + 0 * _points_in_chunk + j;
-                _additional_vertex_data[far_neighboor_index].indexes.near = index;
+                auto far_neighboor_index = far_chunk->_ssbo_offset + 1 * _points_in_chunk + j;
+                _additional_vertex_data[index].indexes.far = far_neighboor_index;
             }
         } else {
             for (size_t j = 0; j < chunk._vertices[i].size(); ++j) {
@@ -421,8 +422,8 @@ void Terrain::updateBuffers() {
         if (left_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {
                 uint32_t index = chunk._ssbo_offset + j * _points_in_chunk + i;
-                auto left_neighboor_index = left_chunk->_ssbo_offset + j * _points_in_chunk + (_points_in_chunk - 1);
-                _additional_vertex_data[left_neighboor_index].indexes.right = index;
+                auto left_neighboor_index = left_chunk->_ssbo_offset + j * _points_in_chunk + (_points_in_chunk - 2);
+                _additional_vertex_data[index].indexes.left = left_neighboor_index;
             }
         } else {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {
@@ -435,8 +436,8 @@ void Terrain::updateBuffers() {
         if (right_chunk != _active_chunks.end()) {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {
                 uint32_t index = chunk._ssbo_offset + j * _points_in_chunk + i;
-                auto right_neighboor_index = right_chunk->_ssbo_offset + j * _points_in_chunk + 0;
-                _additional_vertex_data[right_neighboor_index].indexes.left = index;
+                auto right_neighboor_index = right_chunk->_ssbo_offset + j * _points_in_chunk + 1;
+                _additional_vertex_data[index].indexes.right = right_neighboor_index;
             }
         } else {
             for (size_t j = 0; j < chunk._vertices.size(); ++j) {

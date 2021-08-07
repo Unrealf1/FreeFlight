@@ -34,6 +34,15 @@ public:
     float getHeightAt(const glm::vec2& coords);
     std::string getBiomeNameAt(const glm::vec2& coords);
 
+    void ManualUpdate() {
+        float step = _chunk_length / (_points_in_chunk-1);
+        for (auto& chunk: _active_chunks) {
+            auto tmp = _biomeManager->generateChunk(_points_in_chunk, chunk._center_location - glm::vec2(_chunk_length/2.0f), step);
+            chunk._vertices = tmp._vertices;
+        }
+        _active_chunks_updated = true;
+    }
+
     using chunkContainer_t = std::deque<TerrainChunk>;
     using chunkIt_t = chunkContainer_t::iterator;
     using constChunkIt_t = chunkContainer_t::const_iterator;
@@ -92,5 +101,4 @@ private:
 
     void updateBuffers();
     void flushBuffers();
-
 };

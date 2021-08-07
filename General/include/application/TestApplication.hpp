@@ -104,6 +104,9 @@ protected:
             if (ImGui::Button("Speed-")) {
                 decrSpeed();
             }
+            if (ImGui::Button("Update Terrain")) {
+                _terrain->ManualUpdate();
+            }
 
             ImGui::SliderFloat("sun phi", &_sun->_phi, 0.0f, 2.0f * glm::pi<float>());
             ImGui::SliderFloat("sun theta", &_sun->_theta, 0.0f, glm::pi<float>());
