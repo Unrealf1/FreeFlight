@@ -31,7 +31,7 @@ public:
     }
 
 protected:
-    ChunkVertex generateVertex(const glm::vec2& position, const BiomeCenter& related_center) {
+    ChunkVertex generateVertex(const glm::vec2& position, const BiomeCenter&) {
         float x = position.x;
         float y = position.y;
 

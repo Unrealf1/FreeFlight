@@ -47,7 +47,7 @@ void BiomeManager::updateCenters(const glm::vec2& position) {
 }
 
 std::vector<std::vector<BiomeCenter>> BiomeManager::findAllRelatedCenters(uint32_t points_in_chunk, const glm::vec2& near_left, float step) {
-    float chunk_len = step * static_cast<float>(points_in_chunk);
+    //float chunk_len = step * static_cast<float>(points_in_chunk);
     std::vector<std::vector<BiomeCenter>> related_centers;
     related_centers.resize(points_in_chunk);
 

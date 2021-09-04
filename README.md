@@ -4,10 +4,13 @@
 
 * Bindless textures ✓
 * Texture information in biome & chunk points ✓
-* Lightning [in progress...]
+* Lighting [in progress...]
   * materials
   * shadows
 * Smooth heights and textures [in progress...]
+* Use proper random
+* Clouds
+* Lightnings
 * Structures
   * changing terrain heights & textures
   * adding new vertices

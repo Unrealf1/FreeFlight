@@ -7,6 +7,8 @@
 #include "render/GraphicsInitializer.hpp"
 
 
+
+
 class TextureContainer {
 public:
     static bool checkTexture(const std::string& name) {
@@ -27,6 +29,23 @@ public:
 private:
     static std::unordered_map<std::string, GLuint> _textures;
 };
+
+// class MaterialContainer {
+// public:
+//     static uint32_t loadMaterial(const std::string& filename) {
+
+//     }
+
+//     static bool checkTexture
+
+//     static uint32_t getMaterial(const std::string& name) {
+
+//     }
+
+// private:
+//     inline static std::unordered_map<std::string, uint32_t> _materials;
+
+// };
 
 
 class TexHandleContainer {
